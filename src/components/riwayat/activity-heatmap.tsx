@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { format, subDays, eachDayOfInterval, isSameDay } from 'date-fns';
+import { format, subDays, eachDayOfInterval } from 'date-fns';
 import { id } from 'date-fns/locale';
 
 interface ActivityHeatmapProps {
@@ -35,20 +35,20 @@ export function ActivityHeatmap({ data }: ActivityHeatmapProps) {
   }, [data]);
 
   const getColorClass = (count: number) => {
-    if (count === 0) return 'bg-zinc-900 border-zinc-800/80';
-    if (count === 1) return 'bg-emerald-600/70 border-emerald-500/40';
+    if (count === 0) return 'bg-white/[0.04] border-white/[0.05]';
+    if (count === 1) return 'bg-emerald-600/60 border-emerald-500/40';
     if (count === 2) return 'bg-emerald-500 border-emerald-400';
-    return 'bg-emerald-400 border-emerald-300 shadow-sm shadow-emerald-400/40';
+    return 'bg-emerald-400 border-emerald-300 shadow-[0_0_8px_rgba(52,211,153,0.5)]';
   };
 
   return (
-    <div className="bg-zinc-900/80 border border-zinc-800 rounded-2xl p-4 space-y-3">
+    <div className="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-4 space-y-3">
       <div className="flex items-center justify-between">
         <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400">
-          Kalender Aktivitas (16 Minggu)
+          Kalender Aktivitas
         </h3>
         {hoveredDay ? (
-          <p className="text-xs text-zinc-300 font-medium">
+          <p className="text-xs text-zinc-200 font-medium">
             <span className="text-emerald-400 font-bold">{hoveredDay.dateStr}</span>:{' '}
             {hoveredDay.count > 0 ? (
               <>
@@ -98,15 +98,15 @@ export function ActivityHeatmap({ data }: ActivityHeatmapProps) {
       </div>
 
       {/* Legend */}
-      <div className="flex items-center justify-between text-[11px] text-zinc-500 pt-1 border-t border-zinc-800/60">
-        <span>Kurang Aktif</span>
+      <div className="flex items-center justify-between text-[11px] text-zinc-500 pt-1 border-t border-white/[0.06]">
+        <span>Istirahat</span>
         <div className="flex items-center gap-1.5">
-          <div className="w-2.5 h-2.5 rounded-sm bg-zinc-900 border border-zinc-800" />
-          <div className="w-2.5 h-2.5 rounded-sm bg-emerald-700/60" />
+          <div className="w-2.5 h-2.5 rounded-sm bg-white/[0.04] border border-white/[0.05]" />
+          <div className="w-2.5 h-2.5 rounded-sm bg-emerald-600/60" />
           <div className="w-2.5 h-2.5 rounded-sm bg-emerald-500" />
           <div className="w-2.5 h-2.5 rounded-sm bg-emerald-400" />
         </div>
-        <span>Sering Latihan</span>
+        <span>Aktif</span>
       </div>
     </div>
   );

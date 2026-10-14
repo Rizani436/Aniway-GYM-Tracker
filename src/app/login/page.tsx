@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { Dumbbell, Loader2, Mail, Lock, User } from 'lucide-react';
+import { Dumbbell, Loader2, Mail, Lock, User, Zap } from 'lucide-react';
 import { loginWithEmail, signupWithEmail } from './actions';
 import { createClient } from '@/lib/supabase/client';
 
@@ -42,29 +42,40 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col justify-center px-5 py-10 max-w-md mx-auto">
-      <div className="flex flex-col items-center text-center mb-8">
-        <div className="w-16 h-16 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center mb-4">
-          <Dumbbell className="w-8 h-8 text-emerald-400" />
+    <div className="min-h-screen bg-[#08090a] text-[#f7f8f8] flex flex-col justify-center px-4 py-8 max-w-md mx-auto">
+      {/* Brand Header */}
+      <div className="flex flex-col items-center text-center mb-6">
+        <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center mb-3 text-emerald-400 shadow-[0_0_24px_rgba(16,185,129,0.15)]">
+          <Dumbbell className="w-7 h-7" />
         </div>
-        <h1 className="text-2xl font-bold tracking-tight">Aniway Gym Tracker</h1>
-        <p className="text-sm text-zinc-400 mt-1">
-          Catat beban, pantau progressive overload, raih PR baru.
+        <div className="flex items-center gap-1.5 mb-1">
+          <span className="w-2 h-2 rounded-full bg-emerald-400" />
+          <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">
+            Aniway Tracker
+          </span>
+        </div>
+        <h1 className="text-2xl font-black tracking-tight text-white">
+          {mode === 'login' ? 'Selamat Datang' : 'Mulai Perjalanan'}
+        </h1>
+        <p className="text-xs text-zinc-400 mt-1 max-w-xs leading-relaxed">
+          Catat progressive overload mesin gym dengan cepat & presisi.
         </p>
       </div>
 
-      <div className="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-6 shadow-xl">
-        <div className="grid grid-cols-2 gap-2 p-1 bg-zinc-950 rounded-xl mb-6">
+      {/* Main Card */}
+      <div className="bg-white/[0.03] border border-white/[0.08] rounded-3xl p-5 shadow-[0_12px_40px_rgba(0,0,0,0.8)] backdrop-blur-xl">
+        {/* Tab Switcher */}
+        <div className="grid grid-cols-2 gap-1.5 p-1 bg-white/[0.04] border border-white/[0.06] rounded-2xl mb-5">
           <button
             type="button"
             onClick={() => {
               setMode('login');
               setErrorMsg(null);
             }}
-            className={`py-2.5 text-sm font-semibold rounded-lg transition ${
+            className={`py-2 text-xs font-bold rounded-xl transition-all active:scale-95 ${
               mode === 'login'
-                ? 'bg-emerald-500 text-zinc-950'
-                : 'text-zinc-400 hover:text-zinc-200'
+                ? 'bg-emerald-500 text-zinc-950 font-extrabold shadow-sm'
+                : 'text-zinc-400 hover:text-white'
             }`}
           >
             Masuk
@@ -75,10 +86,10 @@ export default function LoginPage() {
               setMode('register');
               setErrorMsg(null);
             }}
-            className={`py-2.5 text-sm font-semibold rounded-lg transition ${
+            className={`py-2 text-xs font-bold rounded-xl transition-all active:scale-95 ${
               mode === 'register'
-                ? 'bg-emerald-500 text-zinc-950'
-                : 'text-zinc-400 hover:text-zinc-200'
+                ? 'bg-emerald-500 text-zinc-950 font-extrabold shadow-sm'
+                : 'text-zinc-400 hover:text-white'
             }`}
           >
             Daftar Baru
@@ -86,59 +97,59 @@ export default function LoginPage() {
         </div>
 
         {errorMsg && (
-          <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+          <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/25 text-rose-300 text-xs">
             {errorMsg}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3.5">
           {mode === 'register' && (
             <div>
-              <label className="block text-xs font-medium text-zinc-400 mb-1.5">
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-1.5">
                 Nama Panggilan
               </label>
               <div className="relative">
-                <User className="w-5 h-5 text-zinc-500 absolute left-3.5 top-3.5" />
+                <User className="w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
                   name="name"
                   type="text"
                   required
                   placeholder="Contoh: Budi"
-                  className="w-full pl-11 pr-4 py-3 bg-zinc-950 border border-zinc-800 rounded-xl text-base text-zinc-100 focus:outline-none focus:border-emerald-500"
+                  className="w-full pl-10 pr-3.5 py-2.5 bg-black/40 border border-white/[0.08] focus:border-emerald-500 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none transition-colors"
                 />
               </div>
             </div>
           )}
 
           <div>
-            <label className="block text-xs font-medium text-zinc-400 mb-1.5">
+            <label className="block text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-1.5">
               Alamat Email
             </label>
             <div className="relative">
-              <Mail className="w-5 h-5 text-zinc-500 absolute left-3.5 top-3.5" />
+              <Mail className="w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 name="email"
                 type="email"
                 required
                 placeholder="nama@email.com"
-                className="w-full pl-11 pr-4 py-3 bg-zinc-950 border border-zinc-800 rounded-xl text-base text-zinc-100 focus:outline-none focus:border-emerald-500"
+                className="w-full pl-10 pr-3.5 py-2.5 bg-black/40 border border-white/[0.08] focus:border-emerald-500 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none transition-colors"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-zinc-400 mb-1.5">
+            <label className="block text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-1.5">
               Password
             </label>
             <div className="relative">
-              <Lock className="w-5 h-5 text-zinc-500 absolute left-3.5 top-3.5" />
+              <Lock className="w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 name="password"
                 type="password"
                 required
                 minLength={6}
                 placeholder="Minimal 6 karakter"
-                className="w-full pl-11 pr-4 py-3 bg-zinc-950 border border-zinc-800 rounded-xl text-base text-zinc-100 focus:outline-none focus:border-emerald-500"
+                className="w-full pl-10 pr-3.5 py-2.5 bg-black/40 border border-white/[0.08] focus:border-emerald-500 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none transition-colors"
               />
             </div>
           </div>
@@ -146,19 +157,19 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isPending || isGoogleLoading}
-            className="w-full py-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 active:scale-[0.99] text-zinc-950 font-bold text-base transition flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 active:scale-[0.98] text-zinc-950 font-bold text-xs transition-all flex items-center justify-center gap-2 disabled:opacity-50 shadow-[0_4px_16px_rgba(16,185,129,0.3)] pt-3"
           >
-            {isPending && <Loader2 className="w-5 h-5 animate-spin" />}
+            {isPending && <Loader2 className="w-4 h-4 animate-spin" />}
             {mode === 'login' ? 'Masuk Sekarang' : 'Buat Akun'}
           </button>
         </form>
 
-        <div className="relative my-6">
+        <div className="relative my-4">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-zinc-800" />
+            <div className="w-full border-t border-white/[0.08]" />
           </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-zinc-900 px-3 text-zinc-500">Atau lanjut dengan</span>
+          <div className="relative flex justify-center text-[10px] uppercase tracking-wider">
+            <span className="bg-[#0f1011] px-2.5 text-zinc-500">Atau</span>
           </div>
         </div>
 
@@ -166,12 +177,12 @@ export default function LoginPage() {
           type="button"
           onClick={handleGoogleLogin}
           disabled={isPending || isGoogleLoading}
-          className="w-full py-3.5 rounded-xl bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-zinc-100 font-semibold text-sm transition flex items-center justify-center gap-2.5 disabled:opacity-50"
+          className="w-full py-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.07] border border-white/[0.08] text-white font-medium text-xs transition-all flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95"
         >
           {isGoogleLoading ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
+            <Loader2 className="w-4 h-4 animate-spin" />
           ) : (
-            <svg className="w-5 h-5" viewBox="0 0 24 24">
+            <svg className="w-4 h-4" viewBox="0 0 24 24">
               <path
                 fill="currentColor"
                 d="M21.35 11.1h-9.17v2.73h6.51c-.33 3.81-3.5 5.44-6.5 5.44C8.36 19.27 5 16.25 5 12c0-4.1 3.2-7.27 7.2-7.27c3.09 0 4.9 1.97 4.9 1.97L19 4.72S16.56 2 12.1 2C6.42 2 2.03 6.8 2.03 12c0 5.05 4.13 10 10.22 10c5.35 0 9.25-3.67 9.25-9.09c0-1.15-.15-1.81-.15-1.81Z"

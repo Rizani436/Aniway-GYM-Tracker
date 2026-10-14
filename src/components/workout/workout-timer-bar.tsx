@@ -61,26 +61,31 @@ export function WorkoutTimerBar({ initialSeconds, onFinish, onClose }: WorkoutTi
   const formattedTime = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 
   return (
-    <div className="fixed bottom-20 left-0 right-0 z-40 max-w-md mx-auto px-4">
-      <div className="bg-zinc-900/95 backdrop-blur-md border border-emerald-500/40 rounded-2xl p-3.5 shadow-2xl space-y-2 text-zinc-100 animate-in fade-in slide-in-from-bottom-3 duration-200">
+    <div className="fixed bottom-0 left-0 right-0 z-50 max-w-md mx-auto px-3 pb-[env(safe-area-inset-bottom,12px)] pointer-events-none">
+      <div className="pointer-events-auto bg-[#0f1011]/95 backdrop-blur-xl border border-emerald-500/35 shadow-[0_12px_40px_rgba(0,0,0,0.85)] rounded-2xl p-3 space-y-2 text-zinc-100 animate-in fade-in slide-in-from-bottom-3 duration-200">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
               <Timer className="w-4 h-4 animate-pulse" />
             </div>
             <div>
-              <p className="text-[11px] font-medium text-zinc-400">Istirahat Antar Set</p>
-              <p className="text-xl font-black font-mono tracking-tight text-emerald-400">
-                {formattedTime}
-              </p>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-xl font-black font-mono tracking-tight text-white leading-none">
+                  {formattedTime}
+                </span>
+                <span className="text-[10px] uppercase font-bold text-emerald-400 tracking-wider">
+                  Istirahat
+                </span>
+              </div>
+              <p className="text-[10px] text-zinc-400 mt-0.5">Napas & siapkan set berikutnya</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             <button
               type="button"
               onClick={() => addTime(-15)}
-              className="px-2 py-1.5 rounded-lg bg-zinc-800 text-zinc-300 hover:text-white text-xs font-semibold flex items-center gap-0.5"
+              className="px-2 py-1.5 rounded-lg bg-white/[0.05] border border-white/[0.08] text-zinc-300 hover:text-white text-xs font-semibold flex items-center gap-0.5 active:scale-95 transition-all"
               title="-15 detik"
             >
               <Minus className="w-3 h-3" />
@@ -89,7 +94,7 @@ export function WorkoutTimerBar({ initialSeconds, onFinish, onClose }: WorkoutTi
             <button
               type="button"
               onClick={() => addTime(30)}
-              className="px-2 py-1.5 rounded-lg bg-zinc-800 text-zinc-300 hover:text-white text-xs font-semibold flex items-center gap-0.5"
+              className="px-2 py-1.5 rounded-lg bg-white/[0.05] border border-white/[0.08] text-zinc-300 hover:text-white text-xs font-semibold flex items-center gap-0.5 active:scale-95 transition-all"
               title="+30 detik"
             >
               <Plus className="w-3 h-3" />
@@ -98,7 +103,7 @@ export function WorkoutTimerBar({ initialSeconds, onFinish, onClose }: WorkoutTi
             <button
               type="button"
               onClick={() => setIsSoundEnabled(!isSoundEnabled)}
-              className="p-1.5 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white"
+              className="p-2 rounded-lg bg-white/[0.05] border border-white/[0.08] text-zinc-400 hover:text-white active:scale-95 transition-all"
               title={isSoundEnabled ? 'Suara aktif' : 'Suara bisu'}
             >
               {isSoundEnabled ? <Volume2 className="w-4 h-4 text-emerald-400" /> : <VolumeX className="w-4 h-4 text-zinc-500" />}
@@ -106,8 +111,8 @@ export function WorkoutTimerBar({ initialSeconds, onFinish, onClose }: WorkoutTi
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 rounded-lg bg-zinc-800 text-zinc-400 hover:text-red-400"
-              title="Lewati Timer"
+              className="p-2 rounded-lg bg-white/[0.05] border border-white/[0.08] text-zinc-400 hover:text-rose-400 active:scale-95 transition-all"
+              title="Tutup Timer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -115,9 +120,9 @@ export function WorkoutTimerBar({ initialSeconds, onFinish, onClose }: WorkoutTi
         </div>
 
         {/* Progress Bar */}
-        <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
+        <div className="w-full bg-white/[0.08] h-1.5 rounded-full overflow-hidden">
           <div
-            className="bg-emerald-500 h-full transition-all duration-1000 ease-linear rounded-full"
+            className="bg-emerald-400 h-full transition-all duration-1000 ease-linear rounded-full shadow-[0_0_8px_rgba(52,211,153,0.8)]"
             style={{ width: `${Math.min(100, Math.max(0, progressPct))}%` }}
           />
         </div>

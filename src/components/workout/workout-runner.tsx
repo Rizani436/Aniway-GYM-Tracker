@@ -541,11 +541,11 @@ export function WorkoutRunner({
       )}
 
       {/* Top Header / Sticky Bar */}
-      <div className="sticky top-0 z-30 bg-zinc-950/90 backdrop-blur-md border-b border-zinc-800/80 -mx-4 px-4 py-3 mb-4">
+      <div className="sticky top-0 z-30 bg-[#08090a]/90 backdrop-blur-xl border-b border-white/[0.08] -mx-4 px-4 py-3 mb-4">
         <div className="flex items-center justify-between gap-2">
           <Link
             href="/"
-            className="w-9 h-9 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 hover:text-white"
+            className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-zinc-400 hover:text-white active:scale-95 transition-all"
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
@@ -556,7 +556,7 @@ export function WorkoutRunner({
               type="text"
               value={sessionName}
               onChange={(e) => setSessionName(e.target.value)}
-              className="w-full bg-transparent font-black text-zinc-100 text-base focus:outline-none focus:underline truncate"
+              className="w-full bg-transparent font-extrabold text-white text-base focus:outline-none focus:underline truncate"
               placeholder="Nama Sesi Latihan..."
             />
             <div className="flex items-center gap-3 text-xs text-zinc-400 mt-0.5">
@@ -565,7 +565,7 @@ export function WorkoutRunner({
                 {formatTimer(elapsedSeconds)}
               </span>
               <span>•</span>
-              <span className="font-mono">{liveVolume.toLocaleString('id-ID')} kg vol</span>
+              <span className="font-mono text-zinc-300">{liveVolume.toLocaleString('id-ID')} kg vol</span>
             </div>
           </div>
 
@@ -574,7 +574,7 @@ export function WorkoutRunner({
             type="button"
             disabled={isSaving}
             onClick={handleFinishWorkout}
-            className="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-emerald-500/20 active:scale-95 disabled:opacity-50 transition-all shrink-0"
+            className="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs flex items-center gap-1.5 shadow-[0_4px_16px_rgba(16,185,129,0.3)] active:scale-95 disabled:opacity-50 transition-all shrink-0"
           >
             <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
             <span>{isSaving ? 'Menyimpan...' : 'Selesai'}</span>
@@ -585,13 +585,13 @@ export function WorkoutRunner({
       {/* Daftar Gerakan Latihan */}
       <div className="space-y-4">
         {exercises.length === 0 ? (
-          <div className="bg-zinc-900/40 border border-dashed border-zinc-800 rounded-3xl p-8 text-center space-y-3">
-            <div className="w-12 h-12 rounded-2xl bg-zinc-800 flex items-center justify-center mx-auto text-zinc-400">
+          <div className="bg-white/[0.02] border border-dashed border-white/[0.08] rounded-3xl p-8 text-center space-y-3">
+            <div className="w-12 h-12 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center mx-auto text-zinc-400">
               <Dumbbell className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="font-bold text-zinc-200 text-base">Belum Ada Gerakan</h3>
-              <p className="text-xs text-zinc-500 max-w-xs mx-auto mt-1">
+              <h3 className="font-bold text-white text-base">Belum Ada Gerakan</h3>
+              <p className="text-xs text-zinc-400 max-w-xs mx-auto mt-1">
                 Mulai latihan dengan menambahkan gerakan atau pilih dari program yang tersedia.
               </p>
             </div>
@@ -603,7 +603,7 @@ export function WorkoutRunner({
                   mode: 'add',
                 })
               }
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-500 text-zinc-950 font-bold rounded-xl text-xs hover:bg-emerald-400 transition-colors shadow-lg shadow-emerald-500/20"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-500 text-zinc-950 font-bold rounded-xl text-xs hover:bg-emerald-400 active:scale-95 transition-all shadow-[0_4px_16px_rgba(16,185,129,0.3)]"
             >
               <Plus className="w-4 h-4 stroke-[2.5]" />
               Tambah Gerakan Pertama
@@ -613,13 +613,13 @@ export function WorkoutRunner({
           exercises.map((ex, exIndex) => (
             <div
               key={`${ex.exerciseId}_${exIndex}`}
-              className="bg-zinc-900/90 border border-zinc-800/80 rounded-2xl p-3.5 shadow-sm space-y-3"
+              className="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-3.5 shadow-sm space-y-3"
             >
               {/* Exercise Card Header */}
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-zinc-100 text-sm">{ex.name}</h3>
+                    <h3 className="font-bold text-white text-sm">{ex.name}</h3>
                   </div>
                   <div className="flex items-center gap-1.5 mt-1 text-[11px] text-zinc-400">
                     <span className="text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 font-medium">
@@ -644,7 +644,7 @@ export function WorkoutRunner({
                         swappingName: ex.name,
                       })
                     }
-                    className="p-1.5 rounded-lg bg-zinc-800/80 hover:bg-zinc-700 text-zinc-400 hover:text-amber-400 transition-colors"
+                    className="p-1.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-zinc-400 hover:text-amber-300 transition-colors"
                     title="Ganti gerakan (alat penuh/terpakai)"
                   >
                     <Replace className="w-4 h-4" />
@@ -652,7 +652,7 @@ export function WorkoutRunner({
                   <button
                     type="button"
                     onClick={() => handleDeleteExercise(exIndex)}
-                    className="p-1.5 rounded-lg bg-zinc-800/80 hover:bg-zinc-700 text-zinc-400 hover:text-rose-400 transition-colors"
+                    className="p-1.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-zinc-400 hover:text-rose-400 transition-colors"
                     title="Hapus gerakan dari sesi ini"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -662,11 +662,11 @@ export function WorkoutRunner({
 
               {/* Progressive Overload Suggestion Badge */}
               {ex.historyInfo?.progressiveOverloadSuggestion && (
-                <div className="bg-gradient-to-r from-amber-500/15 to-orange-500/15 border border-amber-500/30 rounded-xl p-2.5 flex items-start gap-2 text-xs">
+                <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/25 rounded-xl p-2.5 flex items-start gap-2 text-xs">
                   <Sparkles className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                   <div>
                     <p className="font-bold text-amber-300">Saran Progressive Overload!</p>
-                    <p className="text-[11px] text-amber-200/80 leading-relaxed mt-0.5">
+                    <p className="text-[11px] text-amber-200/90 leading-relaxed mt-0.5">
                       {ex.historyInfo.progressiveOverloadSuggestion.reason}
                     </p>
                   </div>
@@ -703,7 +703,7 @@ export function WorkoutRunner({
               <button
                 type="button"
                 onClick={() => handleAddSet(exIndex)}
-                className="w-full py-2 bg-zinc-800/60 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors border border-dashed border-zinc-800 hover:border-zinc-700"
+                className="w-full py-2 bg-white/[0.02] hover:bg-white/[0.05] text-zinc-300 hover:text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all border border-dashed border-white/[0.08]"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Tambah Set
@@ -722,7 +722,7 @@ export function WorkoutRunner({
                 mode: 'add',
               })
             }
-            className="w-full py-3.5 rounded-2xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-200 hover:text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-sm active:scale-[0.99]"
+            className="w-full py-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] hover:border-white/[0.14] text-zinc-200 hover:text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-sm active:scale-[0.99]"
           >
             <Plus className="w-4 h-4 text-emerald-400 stroke-[2.5]" />
             Tambah Gerakan Lain

@@ -82,7 +82,7 @@ function SortableProgramCard({
     <div
       ref={setNodeRef}
       style={style}
-      className={`relative rounded-2xl bg-zinc-900 border border-zinc-800 overflow-hidden transition ${
+      className={`relative rounded-2xl bg-white/[0.03] border border-white/[0.07] overflow-hidden transition ${
         isDragging ? 'opacity-70 scale-[1.02] z-30 shadow-2xl' : ''
       }`}
     >
@@ -356,14 +356,14 @@ export function LatihanTabsClient({
       </div>
 
       {/* Switcher Tab */}
-      <div className="grid grid-cols-2 gap-2 p-1 bg-zinc-900 border border-zinc-800 rounded-2xl mb-6">
+      <div className="grid grid-cols-2 gap-1.5 p-1.5 bg-white/[0.04] border border-white/[0.08] rounded-2xl mb-5">
         <button
           type="button"
           onClick={() => setActiveTab('programs')}
-          className={`py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition ${
+          className={`py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all active:scale-95 ${
             activeTab === 'programs'
-              ? 'bg-emerald-500 text-zinc-950'
-              : 'text-zinc-400 hover:text-zinc-200'
+              ? 'bg-emerald-500 text-zinc-950 shadow-sm font-extrabold'
+              : 'text-zinc-400 hover:text-white'
           }`}
         >
           <Layers className="w-4 h-4" />
@@ -372,10 +372,10 @@ export function LatihanTabsClient({
         <button
           type="button"
           onClick={() => setActiveTab('exercises')}
-          className={`py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition ${
+          className={`py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all active:scale-95 ${
             activeTab === 'exercises'
-              ? 'bg-emerald-500 text-zinc-950'
-              : 'text-zinc-400 hover:text-zinc-200'
+              ? 'bg-emerald-500 text-zinc-950 shadow-sm font-extrabold'
+              : 'text-zinc-400 hover:text-white'
           }`}
         >
           <Dumbbell className="w-4 h-4" />
@@ -484,28 +484,28 @@ export function LatihanTabsClient({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Cari gerakan mesin, kabel..."
-                className="w-full pl-10 pr-4 py-3 bg-zinc-900 border border-zinc-800 rounded-xl text-sm text-zinc-100 focus:outline-none focus:border-emerald-500"
+                className="w-full pl-10 pr-4 py-2.5 bg-white/[0.04] border border-white/[0.08] rounded-xl text-xs text-white focus:outline-none focus:border-emerald-500 transition-colors"
               />
             </div>
             <button
               type="button"
               onClick={() => setIsExerciseModalOpen(true)}
-              className="px-4 py-3 rounded-xl bg-emerald-500 text-zinc-950 font-bold text-sm flex items-center gap-1.5 shrink-0"
+              className="px-3.5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-zinc-950 font-bold text-xs flex items-center gap-1.5 shrink-0 transition-all shadow-[0_4px_16px_rgba(16,185,129,0.3)]"
             >
               <Plus className="w-4 h-4" />
               Baru
             </button>
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-1.5">
             <select
               value={selectedMuscle}
               onChange={(e) => setSelectedMuscle(e.target.value)}
-              className="px-2.5 py-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-zinc-200 focus:outline-none focus:border-emerald-500"
+              className="px-2 py-2 bg-white/[0.04] border border-white/[0.08] rounded-xl text-[11px] text-zinc-200 focus:outline-none focus:border-emerald-500 transition-colors"
             >
               <option value="ALL">Semua Otot</option>
               {Object.entries(MUSCLE_LABELS).map(([key, label]) => (
-                <option key={key} value={key}>
+                <option key={key} value={key} className="bg-zinc-900 text-white">
                   {label}
                 </option>
               ))}
@@ -514,11 +514,11 @@ export function LatihanTabsClient({
             <select
               value={selectedEquipment}
               onChange={(e) => setSelectedEquipment(e.target.value)}
-              className="px-2.5 py-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-zinc-200 focus:outline-none focus:border-emerald-500"
+              className="px-2 py-2 bg-white/[0.04] border border-white/[0.08] rounded-xl text-[11px] text-zinc-200 focus:outline-none focus:border-emerald-500 transition-colors"
             >
               <option value="ALL">Semua Alat</option>
               {Object.entries(EQUIPMENT_LABELS).map(([key, label]) => (
-                <option key={key} value={key}>
+                <option key={key} value={key} className="bg-zinc-900 text-white">
                   {label}
                 </option>
               ))}
@@ -527,21 +527,21 @@ export function LatihanTabsClient({
             <select
               value={selectedProgramFilter}
               onChange={(e) => setSelectedProgramFilter(e.target.value)}
-              className="px-2.5 py-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-zinc-200 focus:outline-none focus:border-emerald-500"
+              className="px-2 py-2 bg-white/[0.04] border border-white/[0.08] rounded-xl text-[11px] text-zinc-200 focus:outline-none focus:border-emerald-500 transition-colors"
             >
               <option value="ALL">Semua Program</option>
-              {activePrograms.map((p) => (
-                <option key={p.id} value={p.id}>
+              {programs.map((p) => (
+                <option key={p.id} value={p.id} className="bg-zinc-900 text-white">
                   {p.name}
                 </option>
               ))}
             </select>
           </div>
 
-          <div className="space-y-2.5">
+          <div className="space-y-2">
             {filteredExercises.length === 0 ? (
-              <div className="text-center py-10 rounded-2xl bg-zinc-900/50 border border-zinc-800">
-                <p className="text-sm text-zinc-400">
+              <div className="text-center py-10 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
+                <p className="text-xs text-zinc-400">
                   Tidak ada gerakan yang cocok dengan filter.
                 </p>
               </div>
@@ -550,7 +550,7 @@ export function LatihanTabsClient({
                 <Link
                   key={ex.id}
                   href={`/latihan/gerakan/${ex.id}`}
-                  className="block p-4 rounded-2xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 active:scale-[0.99] transition"
+                  className="block p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.07] hover:border-white/[0.12] active:scale-[0.99] transition-all"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div>
