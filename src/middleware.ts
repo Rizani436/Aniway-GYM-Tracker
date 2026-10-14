@@ -1,11 +1,35 @@
+import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 /**
- * Middleware cepat tanpa network call:
- * - Verifikasi keberadaan & masa berlaku JWT auth Supabase secara LOKAL (decode payload saja).
- * - Otorisasi sesungguhnya tetap dilakukan server-side oleh `getAuthenticatedUser()` /
- *   `requireUser()` di server actions, jadi cookie palsu tidak memberi akses data apa pun.
+ * Middleware cepat:
+ * - Fast path (mayoritas request): decode JWT auth Supabase secara LOKAL dari cookie.
+ *   Nol roundtrip jaringan.
+ * - Token kedaluwarsa / gagal decode: fallback ke getUser() Supabase yang sekaligus
+ *   me-REFRESH token (cookie baru ditulis ke response) — sesi user tidak dibuang.
+ * - Otorisasi data tetap diverifikasi server-side oleh getAuthenticatedUser()/requireUser().
  */
+
+function extractAccessToken(cookieValue: string): string | null {
+  // 1. JSON langsung (cookieEncoding: 'json')
+  try {
+    const parsed = JSON.parse(cookieValue);
+    if (typeof parsed?.access_token === 'string') return parsed.access_token;
+  } catch {
+    // lanjut ke percobaan berikutnya
+  }
+
+  // 2. Base64-encoded JSON (cookieEncoding: 'base64', default @supabase/ssr)
+  try {
+    const raw = cookieValue.replace(/%3D/gi, '=');
+    const decoded = JSON.parse(atob(raw));
+    if (typeof decoded?.access_token === 'string') return decoded.access_token;
+  } catch {
+    // bukan format yang dikenal
+  }
+
+  return null;
+}
 
 function getSessionJwtFromCookies(
   all: Array<{ name: string; value: string }>
@@ -14,38 +38,20 @@ function getSessionJwtFromCookies(
     (c) => c.name.startsWith('sb-') && c.name.includes('-auth-token')
   );
 
+  // Cookie utama: sb-<ref>-auth-token
   const main = base.find((c) => c.name.endsWith('-auth-token'));
   if (main) {
-    try {
-      const parsed = JSON.parse(main.value);
-      return typeof parsed?.access_token === 'string' ? parsed.access_token : null;
-    } catch {
-      return null;
-    }
+    return extractAccessToken(main.value);
   }
 
-  // Cookie ter-chunk (sb-xxx-auth-token.0, .1, ...)
+  // Cookie ter-chunk: sb-<ref>-auth-token.0, .1, ...
   const chunks = base.filter((c) => /\.(\d+)$/.test(c.name));
   if (chunks.length > 0) {
-    try {
-      const sorted = chunks.sort(
-        (a, b) =>
-          Number(a.name.match(/\.(\d+)$/)![1]) - Number(b.name.match(/\.(\d+)$/)![1])
-      );
-      const joined = sorted.map((c) => c.value).join('');
-      // Chunk bisa berupa JSON mentah atau base64 dari JSON
-      let raw = joined;
-      try {
-        const parsed = JSON.parse(raw);
-        return typeof parsed?.access_token === 'string' ? parsed.access_token : null;
-      } catch {
-        raw = atob(joined);
-        const parsed = JSON.parse(raw);
-        return typeof parsed?.access_token === 'string' ? parsed.access_token : null;
-      }
-    } catch {
-      return null;
-    }
+    const sorted = chunks.sort(
+      (a, b) =>
+        Number(a.name.match(/\.(\d+)$/)![1]) - Number(b.name.match(/\.(\d+)$/)![1])
+    );
+    return extractAccessToken(sorted.map((c) => c.value).join(''));
   }
 
   return null;
@@ -66,39 +72,68 @@ function isJwtExpired(jwt: string): boolean {
   }
 }
 
-export function middleware(request: NextRequest) {
-  const pathname = request.nextUrl.pathname;
+export async function middleware(request: NextRequest) {
+  let supabaseResponse = NextResponse.next({ request });
 
+  const pathname = request.nextUrl.pathname;
   const isAuthPage =
     pathname.startsWith('/login') || pathname.startsWith('/auth');
   const isPublicAsset =
     pathname.startsWith('/manifest.json') ||
-    pathname.startsWith('/icons') ||
-    pathname.startsWith('/_next');
+    pathname.startsWith('/icons');
 
   if (isPublicAsset || isAuthPage) {
-    return NextResponse.next();
+    return supabaseResponse;
   }
 
-  const allCookies = request.cookies.getAll();
-  const jwt = getSessionJwtFromCookies(allCookies);
+  const jwt = getSessionJwtFromCookies(request.cookies.getAll());
 
-  // Tidak ada cookie auth sama sekali -> redirect ke login tanpa network call
+  // Fast path: token ada & masih berlaku -> lolos tanpa sentuh jaringan
+  if (jwt && !isJwtExpired(jwt)) {
+    return supabaseResponse;
+  }
+
+  // Token tidak ada sama sekali -> belum login, redirect tanpa network call
   if (!jwt) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     return NextResponse.redirect(url);
   }
 
-  // Cookie ada tapi token kedaluwarsa -> paksa re-login (refresh terjadi di /login)
-  if (isJwtExpired(jwt)) {
+  // Token ada tapi kedaluwarsa / format tak dikenal -> verifikasi & refresh via Supabase Auth
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet: Array<{ name: string; value: string; options?: any }>) {
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value)
+          );
+          supabaseResponse = NextResponse.next({ request });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          );
+        },
+      },
+    }
+  );
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     return NextResponse.redirect(url);
   }
 
-  // Token lokal valid -> langsung lolos, nol roundtrip jaringan
-  return NextResponse.next();
+  // Sesi valid & cookie refresh sudah ditulis ke supabaseResponse
+  return supabaseResponse;
 }
 
 export const config = {
