@@ -17,27 +17,45 @@ async function requireUser() {
 export async function getRiwayatDataAction() {
   const user = await requireUser();
 
-  const sessions = await prisma.workoutSession.findMany({
-    where: {
-      userId: user.id,
-      isCompleted: true,
-    },
-    orderBy: { startedAt: 'desc' },
-    include: {
-      program: {
-        select: { id: true, name: true, color: true },
+  // Kedua query dijalankan paralel: 1 round-trip gabungan, bukan 2 berurutan.
+  const [sessions, availableExercises] = await Promise.all([
+    prisma.workoutSession.findMany({
+      where: {
+        userId: user.id,
+        isCompleted: true,
       },
-      exercises: {
-        orderBy: { sortOrder: 'asc' },
-        include: {
-          exercise: true,
-          sets: {
-            orderBy: { setNumber: 'asc' },
+      orderBy: { startedAt: 'desc' },
+      include: {
+        program: {
+          select: { id: true, name: true, color: true },
+        },
+        exercises: {
+          orderBy: { sortOrder: 'asc' },
+          include: {
+            exercise: true,
+            sets: {
+              orderBy: { setNumber: 'asc' },
+            },
           },
         },
       },
-    },
-  });
+    }),
+    // Daftar gerakan untuk modal input sesi manual
+    prisma.exercise.findMany({
+      where: {
+        isArchived: false,
+        OR: [{ userId: null }, { userId: user.id }],
+      },
+      select: {
+        id: true,
+        name: true,
+        primaryMuscle: true,
+        equipment: true,
+        weightIncrement: true,
+      },
+      orderBy: { name: 'asc' },
+    }),
+  ]);
 
   // 1. Kalkulasi Statistik Utama & Streak
   const totalSessions = sessions.length;
@@ -100,20 +118,7 @@ export async function getRiwayatDataAction() {
   }));
 
   // Ambil daftar gerakan untuk modal input sesi manual
-  const availableExercises = await prisma.exercise.findMany({
-    where: {
-      isArchived: false,
-      OR: [{ userId: null }, { userId: user.id }],
-    },
-    select: {
-      id: true,
-      name: true,
-      primaryMuscle: true,
-      equipment: true,
-      weightIncrement: true,
-    },
-    orderBy: { name: 'asc' },
-  });
+  // (sudah dijalankan paralel di atas)
 
   return {
     sessions,

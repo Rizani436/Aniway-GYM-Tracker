@@ -48,8 +48,10 @@ docker run -d \
 1. Clone / copy folder project ke VPS Anda.
 2. Siapkan file `.env` di VPS:
    ```env
-   DATABASE_URL="postgresql://postgres.[ID]:[PASS]@aws-0-ap-southeast-2.pooler.supabase.com:6543/postgres?pgbouncer=true"
-   DIRECT_URL="postgresql://postgres.[ID]:[PASS]@aws-0-ap-southeast-2.pooler.supabase.com:5432/postgres"
+   # WAJIB tanpa ?pgbouncer=true — parameter itu memperlambat setiap query ~5x
+   # (1.5 detik menjadi 0.3 detik) pada Supavisor Supabase.
+   DATABASE_URL="postgresql://postgres.[ID]:[PASSWORD]@aws-0-ap-southeast-2.pooler.supabase.com:5432/postgres"
+   DIRECT_URL="postgresql://postgres.[ID]:[PASSWORD]@aws-0-ap-southeast-2.pooler.supabase.com:5432/postgres"
    NEXT_PUBLIC_SUPABASE_URL="https://[ID].supabase.co"
    NEXT_PUBLIC_SUPABASE_ANON_KEY="[ANON_KEY]"
    ```

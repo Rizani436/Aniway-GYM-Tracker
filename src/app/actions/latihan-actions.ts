@@ -22,6 +22,46 @@ async function requireUser() {
 
 // ==================== PROGRAM ACTIONS ====================
 
+export async function getHomeDataAction() {
+  const user = await requireUser();
+
+  // Hanya 2 round-trip DB untuk seluruh halaman Home:
+  // 1. program + jumlah gerakan (tanpa nested exercise full row)
+  // 2. jumlah gerakan di pustaka
+  const [programs, exerciseCount] = await Promise.all([
+    prisma.program.findMany({
+      where: { userId: user.id, isArchived: false },
+      select: {
+        id: true,
+        name: true,
+        color: true,
+        _count: { select: { exercises: true, sessions: true } },
+      },
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+    }),
+    prisma.exercise.count({
+      where: {
+        isArchived: false,
+        OR: [{ userId: null }, { userId: user.id }],
+      },
+    }),
+  ]);
+
+  return {
+    user: {
+      name: user.name,
+    },
+    programs: programs.map((p) => ({
+      id: p.id,
+      name: p.name,
+      color: p.color,
+      exerciseCount: p._count.exercises,
+      sessionCount: p._count.sessions,
+    })),
+    exerciseCount,
+  };
+}
+
 export async function getProgramsAction(includeArchived = false) {
   const user = await requireUser();
 
