@@ -1,88 +1,104 @@
-import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
-    request,
-  });
+/**
+ * Middleware cepat tanpa network call:
+ * - Verifikasi keberadaan & masa berlaku JWT auth Supabase secara LOKAL (decode payload saja).
+ * - Otorisasi sesungguhnya tetap dilakukan server-side oleh `getAuthenticatedUser()` /
+ *   `requireUser()` di server actions, jadi cookie palsu tidak memberi akses data apa pun.
+ */
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet: Array<{ name: string; value: string; options?: any }>) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          );
-          supabaseResponse = NextResponse.next({
-            request,
-          });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          );
-        },
-      },
-    }
-  );
-
-  const isAuthPage =
-    request.nextUrl.pathname.startsWith('/login') ||
-    request.nextUrl.pathname.startsWith('/auth');
-  const isManifestOrPublic =
-    request.nextUrl.pathname.startsWith('/manifest.json') ||
-    request.nextUrl.pathname.startsWith('/icons');
-
-  if (isManifestOrPublic) {
-    return supabaseResponse;
-  }
-
-  // Fast-path: cek apakah ada cookie auth Supabase
-  const allCookies = request.cookies.getAll();
-  const hasAuthCookie = allCookies.some(
+function getSessionJwtFromCookies(
+  all: Array<{ name: string; value: string }>
+): string | null {
+  const base = all.filter(
     (c) => c.name.startsWith('sb-') && c.name.includes('-auth-token')
   );
 
-  // Jika tidak ada cookie auth dan bukan di halaman login/auth, redirect langsung tanpa network call
-  if (!hasAuthCookie) {
-    if (!isAuthPage) {
-      const url = request.nextUrl.clone();
-      url.pathname = '/login';
-      return NextResponse.redirect(url);
+  const main = base.find((c) => c.name.endsWith('-auth-token'));
+  if (main) {
+    try {
+      const parsed = JSON.parse(main.value);
+      return typeof parsed?.access_token === 'string' ? parsed.access_token : null;
+    } catch {
+      return null;
     }
-    return supabaseResponse;
   }
 
-  // Cek apakah request merupakan prefetch Next.js router
-  const isPrefetch =
-    request.headers.get('next-router-prefetch') === '1' ||
-    request.headers.get('purpose') === 'prefetch';
-
-  // Jika prefetch dan user memiliki auth cookie, biarkan lewat tanpa memblokir jaringan
-  if (isPrefetch && !isAuthPage) {
-    return supabaseResponse;
+  // Cookie ter-chunk (sb-xxx-auth-token.0, .1, ...)
+  const chunks = base.filter((c) => /\.(\d+)$/.test(c.name));
+  if (chunks.length > 0) {
+    try {
+      const sorted = chunks.sort(
+        (a, b) =>
+          Number(a.name.match(/\.(\d+)$/)![1]) - Number(b.name.match(/\.(\d+)$/)![1])
+      );
+      const joined = sorted.map((c) => c.value).join('');
+      // Chunk bisa berupa JSON mentah atau base64 dari JSON
+      let raw = joined;
+      try {
+        const parsed = JSON.parse(raw);
+        return typeof parsed?.access_token === 'string' ? parsed.access_token : null;
+      } catch {
+        raw = atob(joined);
+        const parsed = JSON.parse(raw);
+        return typeof parsed?.access_token === 'string' ? parsed.access_token : null;
+      }
+    } catch {
+      return null;
+    }
   }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  return null;
+}
 
-  if (!user && !isAuthPage) {
+function isJwtExpired(jwt: string): boolean {
+  try {
+    const payloadPart = jwt.split('.')[1];
+    if (!payloadPart) return true;
+    const payload = JSON.parse(
+      atob(payloadPart.replace(/-/g, '+').replace(/_/g, '/'))
+    );
+    if (!payload?.exp) return true;
+    // Toleransi 30 detik clock skew
+    return payload.exp * 1000 < Date.now() + 30_000;
+  } catch {
+    return true;
+  }
+}
+
+export function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+
+  const isAuthPage =
+    pathname.startsWith('/login') || pathname.startsWith('/auth');
+  const isPublicAsset =
+    pathname.startsWith('/manifest.json') ||
+    pathname.startsWith('/icons') ||
+    pathname.startsWith('/_next');
+
+  if (isPublicAsset || isAuthPage) {
+    return NextResponse.next();
+  }
+
+  const allCookies = request.cookies.getAll();
+  const jwt = getSessionJwtFromCookies(allCookies);
+
+  // Tidak ada cookie auth sama sekali -> redirect ke login tanpa network call
+  if (!jwt) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     return NextResponse.redirect(url);
   }
 
-  if (user && request.nextUrl.pathname.startsWith('/login')) {
+  // Cookie ada tapi token kedaluwarsa -> paksa re-login (refresh terjadi di /login)
+  if (isJwtExpired(jwt)) {
     const url = request.nextUrl.clone();
-    url.pathname = '/';
+    url.pathname = '/login';
     return NextResponse.redirect(url);
   }
 
-  return supabaseResponse;
+  // Token lokal valid -> langsung lolos, nol roundtrip jaringan
+  return NextResponse.next();
 }
 
 export const config = {

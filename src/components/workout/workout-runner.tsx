@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { useRouter } from 'next/navigation';
 import { SetType, MuscleGroup, EquipmentType } from '@prisma/client';
 import {
@@ -269,48 +269,50 @@ export function WorkoutRunner({
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   };
 
-  // Handler update set
-  const handleUpdateSet = (
-    exerciseIndex: number,
-    setIndex: number,
-    updated: Partial<SetRowData>
-  ) => {
-    setExercises((prev) => {
-      const next = [...prev];
-      const targetEx = { ...next[exerciseIndex] };
-      const nextSets = [...targetEx.sets];
-      nextSets[setIndex] = { ...nextSets[setIndex], ...updated };
-      targetEx.sets = nextSets;
-      next[exerciseIndex] = targetEx;
-      return next;
-    });
-  };
+  // Handler update set (dengan path replacement ringan agar input tetap instan)
+  const handleUpdateSet = useCallback(
+    (exerciseIndex: number, setIndex: number, updated: Partial<SetRowData>) => {
+      setExercises((prev) => {
+        const next = [...prev];
+        const targetEx = { ...next[exerciseIndex] };
+        const nextSets = [...targetEx.sets];
+        nextSets[setIndex] = { ...nextSets[setIndex], ...updated };
+        targetEx.sets = nextSets;
+        next[exerciseIndex] = targetEx;
+        return next;
+      });
+    },
+    []
+  );
 
   // Handler centang set selesai -> Picu Timer Istirahat
-  const handleToggleComplete = (exerciseIndex: number, setIndex: number) => {
-    setExercises((prev) => {
-      const next = [...prev];
-      const targetEx = { ...next[exerciseIndex] };
-      const nextSets = [...targetEx.sets];
-      const currentStatus = nextSets[setIndex].isCompleted;
-      const newStatus = !currentStatus;
+  const handleToggleComplete = useCallback(
+    (exerciseIndex: number, setIndex: number) => {
+      setExercises((prev) => {
+        const next = [...prev];
+        const targetEx = { ...next[exerciseIndex] };
+        const nextSets = [...targetEx.sets];
+        const currentStatus = nextSets[setIndex].isCompleted;
+        const newStatus = !currentStatus;
 
-      nextSets[setIndex] = { ...nextSets[setIndex], isCompleted: newStatus };
-      targetEx.sets = nextSets;
-      next[exerciseIndex] = targetEx;
+        nextSets[setIndex] = { ...nextSets[setIndex], isCompleted: newStatus };
+        targetEx.sets = nextSets;
+        next[exerciseIndex] = targetEx;
 
-      // Jika set baru saja diselesaikan, jalankan Rest Timer
-      if (newStatus) {
-        const restSec = targetEx.restSeconds || user.defaultRestTimer || 90;
-        setActiveRestTimer({ key: Date.now(), duration: restSec });
-      }
+        // Jika set baru saja diselesaikan, jalankan Rest Timer
+        if (newStatus) {
+          const restSec = targetEx.restSeconds || user.defaultRestTimer || 90;
+          setActiveRestTimer({ key: Date.now(), duration: restSec });
+        }
 
-      return next;
-    });
-  };
+        return next;
+      });
+    },
+    [user.defaultRestTimer]
+  );
 
   // Tambah set baru pada gerakan tertentu
-  const handleAddSet = (exerciseIndex: number) => {
+  const handleAddSet = useCallback((exerciseIndex: number) => {
     setExercises((prev) => {
       const next = [...prev];
       const targetEx = { ...next[exerciseIndex] };
@@ -330,10 +332,10 @@ export function WorkoutRunner({
       next[exerciseIndex] = targetEx;
       return next;
     });
-  };
+  }, []);
 
   // Hapus set dari gerakan
-  const handleDeleteSet = (exerciseIndex: number, setIndex: number) => {
+  const handleDeleteSet = useCallback((exerciseIndex: number, setIndex: number) => {
     setExercises((prev) => {
       const next = [...prev];
       const targetEx = { ...next[exerciseIndex] };
@@ -347,7 +349,7 @@ export function WorkoutRunner({
       next[exerciseIndex] = targetEx;
       return next;
     });
-  };
+  }, []);
 
   // Hapus gerakan dari sesi
   const handleDeleteExercise = (exerciseIndex: number) => {
@@ -508,7 +510,7 @@ export function WorkoutRunner({
   }, 0);
 
   return (
-    <div className="pb-36 max-w-lg mx-auto">
+    <div className="pb-40 max-w-lg mx-auto" style={{ touchAction: 'pan-y' }}>
       {/* Draft Recovery Banner */}
       {draftBanner.exists && (
         <div className="bg-amber-500/15 border border-amber-500/30 rounded-2xl p-3.5 mb-4 flex items-center justify-between gap-3 animate-in fade-in">
@@ -541,11 +543,12 @@ export function WorkoutRunner({
       )}
 
       {/* Top Header / Sticky Bar */}
-      <div className="sticky top-0 z-30 bg-[#08090a]/90 backdrop-blur-xl border-b border-white/[0.08] -mx-4 px-4 py-3 mb-4">
+      <div className="sticky top-0 z-30 bg-[#08090a]/95 backdrop-blur-xl border-b border-white/[0.08] -mx-4 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 mb-4">
         <div className="flex items-center justify-between gap-2">
           <Link
             href="/"
-            className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-zinc-400 hover:text-white active:scale-95 transition-all"
+            className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-zinc-300 active:scale-90 transition-transform shrink-0 touch-manipulation"
+            aria-label="Kembali ke beranda"
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
@@ -556,16 +559,16 @@ export function WorkoutRunner({
               type="text"
               value={sessionName}
               onChange={(e) => setSessionName(e.target.value)}
-              className="w-full bg-transparent font-extrabold text-white text-base focus:outline-none focus:underline truncate"
+              className="w-full bg-transparent font-extrabold text-white text-base focus:outline-none truncate"
               placeholder="Nama Sesi Latihan..."
             />
             <div className="flex items-center gap-3 text-xs text-zinc-400 mt-0.5">
-              <span className="flex items-center gap-1 font-mono text-emerald-400 font-bold">
+              <span className="flex items-center gap-1 font-mono text-emerald-400 font-bold tabular-nums">
                 <Timer className="w-3.5 h-3.5" />
                 {formatTimer(elapsedSeconds)}
               </span>
               <span>•</span>
-              <span className="font-mono text-zinc-300">{liveVolume.toLocaleString('id-ID')} kg vol</span>
+              <span className="font-mono text-zinc-300 tabular-nums">{liveVolume.toLocaleString('id-ID')} kg</span>
             </div>
           </div>
 
@@ -574,7 +577,7 @@ export function WorkoutRunner({
             type="button"
             disabled={isSaving}
             onClick={handleFinishWorkout}
-            className="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs flex items-center gap-1.5 shadow-[0_4px_16px_rgba(16,185,129,0.3)] active:scale-95 disabled:opacity-50 transition-all shrink-0"
+            className="px-4 h-10 rounded-xl bg-emerald-500 text-zinc-950 font-bold text-xs flex items-center gap-1.5 shadow-[0_4px_16px_rgba(16,185,129,0.3)] active:scale-95 disabled:opacity-50 transition-transform shrink-0 touch-manipulation"
           >
             <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
             <span>{isSaving ? 'Menyimpan...' : 'Selesai'}</span>
@@ -674,13 +677,13 @@ export function WorkoutRunner({
               )}
 
               {/* Sets Table Header */}
-              <div className="flex items-center gap-1.5 px-2 text-[10px] font-bold uppercase tracking-wider text-zinc-500">
-                <span className="w-7 text-center shrink-0">SET</span>
-                <span className="w-14 text-center shrink-0">SESI LALU</span>
-                <span className="flex-1 text-center">BEBAN (KG)</span>
-                <span className="flex-1 text-center">REPS</span>
-                <span className="w-8 text-center shrink-0">CEK</span>
-                <span className="w-6 shrink-0" />
+              <div className="flex items-center gap-1 px-1.5 text-[9px] font-bold uppercase tracking-wider text-zinc-500">
+                <span className="w-8 text-center shrink-0">Set</span>
+                <span className="w-12 text-center shrink-0 hidden sm:block">Lalu</span>
+                <span className="flex-1 text-center">Beban</span>
+                <span className="flex-1 text-center">Reps</span>
+                <span className="w-9 text-center shrink-0">✓</span>
+                <span className="w-7 shrink-0" />
               </div>
 
               {/* Set Rows */}

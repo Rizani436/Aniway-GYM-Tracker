@@ -25,7 +25,7 @@ export default async function WorkoutPage({ searchParams }: PageProps) {
   }
 
   return (
-    <main className="min-h-screen bg-zinc-950 text-zinc-100 px-4 pt-4">
+    <main className="min-h-[100dvh] bg-[#08090a] text-[#f7f8f8] px-4 pt-[max(0.5rem,env(safe-area-inset-top))]">
       <WorkoutRunner
         user={initialData.user}
         initialProgram={initialData.selectedProgram}

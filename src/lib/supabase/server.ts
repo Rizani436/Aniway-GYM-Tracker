@@ -39,6 +39,15 @@ export const getAuthenticatedUser = cache(async () => {
     return null;
   }
 
+  const profileFields = {
+    email: user.email,
+    name:
+      user.user_metadata?.full_name ||
+      user.user_metadata?.name ||
+      user.email.split('@')[0],
+    avatarUrl: user.user_metadata?.avatar_url || null,
+  };
+
   // Cek apakah user sudah ada di database (read-only query jauh lebih cepat dibanding upsert lock)
   const existingUser = await prisma.user.findUnique({
     where: { id: user.id },
@@ -51,22 +60,10 @@ export const getAuthenticatedUser = cache(async () => {
   // Jika user baru pertama kali login, buat record di database
   const dbUser = await prisma.user.upsert({
     where: { id: user.id },
-    update: {
-      email: user.email,
-      name:
-        user.user_metadata?.full_name ||
-        user.user_metadata?.name ||
-        user.email.split('@')[0],
-      avatarUrl: user.user_metadata?.avatar_url || null,
-    },
+    update: profileFields,
     create: {
       id: user.id,
-      email: user.email,
-      name:
-        user.user_metadata?.full_name ||
-        user.user_metadata?.name ||
-        user.email.split('@')[0],
-      avatarUrl: user.user_metadata?.avatar_url || null,
+      ...profileFields,
     },
   });
 

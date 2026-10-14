@@ -33,26 +33,28 @@ export type ExerciseHistoryInfo = {
 export async function getWorkoutInitialDataAction(programId?: string) {
   const user = await requireUser();
 
-  // 1. Ambil seluruh program aktif user untuk opsi ganti/mulai program
-  const userPrograms = await prisma.program.findMany({
-    where: { userId: user.id, isArchived: false },
-    orderBy: { sortOrder: 'asc' },
-    include: {
-      exercises: {
-        orderBy: { sortOrder: 'asc' },
-        include: { exercise: true },
+  // Semua query dijalankan paralel sekaligus (1 kali round-trip jaringan, bukan berurutan)
+  const [userPrograms, availableExercises] = await Promise.all([
+    // 1. Seluruh program aktif user untuk opsi ganti/mulai program
+    prisma.program.findMany({
+      where: { userId: user.id, isArchived: false },
+      orderBy: { sortOrder: 'asc' },
+      include: {
+        exercises: {
+          orderBy: { sortOrder: 'asc' },
+          include: { exercise: true },
+        },
       },
-    },
-  });
-
-  // 2. Ambil seluruh pustaka gerakan untuk modal ganti/tambah alat
-  const availableExercises = await prisma.exercise.findMany({
-    where: {
-      isArchived: false,
-      OR: [{ userId: null }, { userId: user.id }],
-    },
-    orderBy: [{ primaryMuscle: 'asc' }, { name: 'asc' }],
-  });
+    }),
+    // 2. Seluruh pustaka gerakan untuk modal ganti/tambah alat
+    prisma.exercise.findMany({
+      where: {
+        isArchived: false,
+        OR: [{ userId: null }, { userId: user.id }],
+      },
+      orderBy: [{ primaryMuscle: 'asc' }, { name: 'asc' }],
+    }),
+  ]);
 
   // 3. Ambil data program terpilih jika ada
   let selectedProgram = null;
@@ -111,6 +113,9 @@ async function getExerciseHistoryForUser(
       },
       orderBy: { performedAt: 'desc' },
       include: {
+        exercise: {
+          select: { weightIncrement: true },
+        },
         sets: {
           orderBy: { setNumber: 'asc' },
         },
@@ -137,6 +142,9 @@ async function getExerciseHistoryForUser(
     };
   }
 
+  // Ambil weightIncrement gerakan tanpa query tambahan per gerakan
+  const increment = lastSessionExercise.exercise?.weightIncrement || 2.5;
+
   const previousSets = lastSessionExercise.sets.map((s) => ({
     setNumber: s.setNumber,
     weight: s.weight,
@@ -158,12 +166,6 @@ async function getExerciseHistoryForUser(
       completedWorkSets.length > 0 &&
       completedWorkSets.every((s) => s.reps >= targetRepMax)
     ) {
-      const exercise = await prisma.exercise.findUnique({
-        where: { id: exerciseId },
-        select: { weightIncrement: true },
-      });
-      const increment = exercise?.weightIncrement || 2.5;
-
       progressiveOverloadSuggestion = {
         suggestedWeightIncrement: increment,
         reason: `Semua ${completedWorkSets.length} set sesi lalu tembus target (${targetRepMax} rep). Naikkan beban +${increment} kg hari ini!`,
