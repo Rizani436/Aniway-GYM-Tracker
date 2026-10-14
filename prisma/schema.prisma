@@ -1,0 +1,219 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum MuscleGroup {
+  CHEST       // Dada
+  BACK        // Punggung
+  SHOULDERS   // Bahu
+  BICEPS      // Bisep
+  TRICEPS     // Trisep
+  QUADS       // Paha Depan
+  HAMSTRINGS  // Paha Belakang
+  GLUTES      // Bokong
+  CALVES      // Betis
+  ABS         // Perut / Core
+  FOREARMS    // Lengan Bawah
+  FULL_BODY   // Seluruh Tubuh
+}
+
+enum EquipmentType {
+  MACHINE         // Mesin Pin / Stack
+  PLATE_LOADED    // Mesin Plate Loaded (Hammer Strength, dll)
+  CABLE           // Mesin Kabel / Pulley
+  SMITH_MACHINE   // Smith Machine
+  DUMBBELL        // Dumbbell
+  BARBELL         // Barbell
+  BODYWEIGHT      // Berat Badan / Assisted Machine
+  OTHER           // Lainnya
+}
+
+enum SetType {
+  WARMUP
+  NORMAL
+  DROPSET
+  FAILURE
+}
+
+enum WeightUnit {
+  KG
+  LB
+}
+
+enum ThemeMode {
+  DARK
+  LIGHT
+}
+
+model User {
+  id               String          @id // Sama dengan auth.users.id dari Supabase
+  email            String          @unique
+  name             String?
+  avatarUrl        String?
+  weightUnit       WeightUnit      @default(KG)
+  defaultRestTimer Int             @default(90) // Dalam detik
+  theme            ThemeMode       @default(DARK)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  programs         Program[]
+  exercises        Exercise[]
+  workoutSessions  WorkoutSession[]
+  sessionExercises SessionExercise[]
+  setLogs          SetLog[]
+  bodyWeightLogs   BodyWeightLog[]
+}
+
+model Program {
+  id          String            @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  color       String            @default("#10b981") // Warna aksen program (hex)
+  sortOrder   Int               @default(0)
+  isArchived  Boolean           @default(false)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercises   ProgramExercise[]
+  sessions    WorkoutSession[]
+
+  @@index([userId, isArchived, sortOrder])
+}
+
+model Exercise {
+  id               String            @id @default(cuid())
+  userId           String?           // Null = gerakan master/seed sistem, terisi = gerakan custom user
+  name             String
+  primaryMuscle    MuscleGroup
+  secondaryMuscles MuscleGroup[]
+  equipment        EquipmentType     @default(MACHINE)
+  weightIncrement  Float             @default(5.0) // Kenaikan beban spesifik per alat (kg)
+  steps            String[]          // Langkah-langkah berurutan
+  tips             String[]          // Tips teknik & eksekusi
+  commonMistakes   String[]          // Kesalahan umum yang harus dihindari
+  videoUrl         String?
+  alternatives     String[]          // Nama gerakan alternatif jika alat penuh
+  isCustom         Boolean           @default(false)
+  isArchived       Boolean           @default(false)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  user             User?             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  programExercises ProgramExercise[]
+  sessionExercises SessionExercise[]
+  setLogs          SetLog[]
+
+  @@index([userId, isArchived])
+  @@index([primaryMuscle, equipment])
+}
+
+model ProgramExercise {
+  id            String   @id @default(cuid())
+  programId     String
+  exerciseId    String
+  sortOrder     Int      @default(0)
+  targetSets    Int      @default(3)
+  targetRepMin  Int      @default(8)
+  targetRepMax  Int      @default(12)
+  restSeconds   Int      @default(90)
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  program       Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
+  exercise      Exercise @relation(fields: [exerciseId], references: [id], onDelete: Restrict)
+
+  @@unique([programId, exerciseId, sortOrder])
+  @@index([programId, sortOrder])
+}
+
+model WorkoutSession {
+  id           String            @id @default(cuid())
+  userId       String
+  programId    String?           // Nullable untuk sesi latihan kosong (Freestyle)
+  name         String            // Nama sesi (diambil dari nama Program atau "Latihan Bebas")
+  startedAt    DateTime          @default(now())
+  endedAt      DateTime?
+  durationSec  Int               @default(0)
+  totalVolume  Float             @default(0) // Total (beban * rep) seluruh set selesai
+  notes        String?
+  isCompleted  Boolean           @default(true)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  program      Program?          @relation(fields: [programId], references: [id], onDelete: SetNull)
+  exercises    SessionExercise[]
+
+  @@index([userId, startedAt(sort: Desc)])
+  @@index([userId, programId])
+}
+
+model SessionExercise {
+  id               String         @id @default(cuid())
+  workoutSessionId String
+  userId           String         // Denormalisasi untuk index cepat
+  exerciseId       String
+  performedAt      DateTime       @default(now()) // Denormalisasi tanggal sesi untuk index cepat
+  sortOrder        Int            @default(0)
+  restSeconds      Int            @default(90)
+  notes            String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  workoutSession   WorkoutSession @relation(fields: [workoutSessionId], references: [id], onDelete: Cascade)
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercise         Exercise       @relation(fields: [exerciseId], references: [id], onDelete: Restrict)
+  sets             SetLog[]
+
+  // Index utama sesuai spesifikasi: (userId, exerciseId, tanggal)
+  @@index([userId, exerciseId, performedAt(sort: Desc)])
+  @@index([workoutSessionId, sortOrder])
+}
+
+model SetLog {
+  id                String          @id @default(cuid())
+  sessionExerciseId String
+  userId            String          // Denormalisasi untuk query PR & statistik cepat
+  exerciseId        String          // Denormalisasi untuk query PR & statistik cepat
+  performedAt       DateTime        @default(now())
+  setNumber         Int
+  weight            Float           @default(0)
+  reps              Int             @default(0)
+  setType           SetType         @default(NORMAL)
+  rpe               Float?          // Skala 1-10 (opsional)
+  estimated1RM      Float           @default(0) // Dihitung saat disimpan: weight * (1 + reps/30)
+  isCompleted       Boolean         @default(false)
+  isPersonalRecord  Boolean         @default(false)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  sessionExercise   SessionExercise @relation(fields: [sessionExerciseId], references: [id], onDelete: Cascade)
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercise          Exercise        @relation(fields: [exerciseId], references: [id], onDelete: Restrict)
+
+  // Index utama sesuai spesifikasi: (userId, exerciseId, tanggal)
+  @@index([userId, exerciseId, performedAt(sort: Desc)])
+  @@index([sessionExerciseId, setNumber])
+}
+
+model BodyWeightLog {
+  id         String   @id @default(cuid())
+  userId     String
+  weight     Float
+  recordedAt DateTime @default(now())
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, recordedAt(sort: Desc)])
+}
