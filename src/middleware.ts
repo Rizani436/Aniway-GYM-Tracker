@@ -11,18 +11,27 @@ import { NextResponse, type NextRequest } from 'next/server';
  */
 
 function extractAccessToken(cookieValue: string): string | null {
+  let raw = cookieValue;
+
+  // @supabase/ssr v0.5.x (cookieEncoding "base64url", default):
+  // nilai cookie = "base64-" + base64url(JSON). Buang prefix-nya dulu.
+  if (raw.startsWith('base64-')) {
+    raw = raw.slice('base64-'.length);
+  }
+
   // 1. JSON langsung (cookieEncoding: 'json')
   try {
-    const parsed = JSON.parse(cookieValue);
+    const parsed = JSON.parse(raw);
     if (typeof parsed?.access_token === 'string') return parsed.access_token;
   } catch {
     // lanjut ke percobaan berikutnya
   }
 
-  // 2. Base64-encoded JSON (cookieEncoding: 'base64', default @supabase/ssr)
+  // 2. Base64/Base64URL decode -> JSON
   try {
-    const raw = cookieValue.replace(/%3D/gi, '=');
-    const decoded = JSON.parse(atob(raw));
+    const std = raw.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = std + '='.repeat((4 - (std.length % 4)) % 4);
+    const decoded = JSON.parse(atob(padded));
     if (typeof decoded?.access_token === 'string') return decoded.access_token;
   } catch {
     // bukan format yang dikenal
