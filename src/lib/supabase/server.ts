@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
+import { cache } from 'react';
 
 export async function createClient() {
   const cookieStore = await cookies();
@@ -27,7 +28,7 @@ export async function createClient() {
   );
 }
 
-export async function getAuthenticatedUser() {
+export const getAuthenticatedUser = cache(async () => {
   const supabase = await createClient();
   const {
     data: { user },
@@ -38,6 +39,16 @@ export async function getAuthenticatedUser() {
     return null;
   }
 
+  // Cek apakah user sudah ada di database (read-only query jauh lebih cepat dibanding upsert lock)
+  const existingUser = await prisma.user.findUnique({
+    where: { id: user.id },
+  });
+
+  if (existingUser) {
+    return existingUser;
+  }
+
+  // Jika user baru pertama kali login, buat record di database
   const dbUser = await prisma.user.upsert({
     where: { id: user.id },
     update: {
@@ -60,4 +71,5 @@ export async function getAuthenticatedUser() {
   });
 
   return dbUser;
-}
+});
+

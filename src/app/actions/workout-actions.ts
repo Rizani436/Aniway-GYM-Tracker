@@ -66,13 +66,16 @@ export async function getWorkoutInitialDataAction(programId?: string) {
     selectedProgram.exercises.forEach((pe) => relevantExerciseIds.add(pe.exerciseId));
   }
 
-  // 5. Query riwayat sesi terakhir & best 1RM untuk setiap gerakan relevan
+  // 5. Query riwayat sesi terakhir & best 1RM untuk setiap gerakan relevan secara paralel
   const historyMap: Record<string, ExerciseHistoryInfo> = {};
 
-  for (const exId of Array.from(relevantExerciseIds)) {
-    const history = await getExerciseHistoryForUser(user.id, exId, selectedProgram?.exercises.find(pe => pe.exerciseId === exId)?.targetRepMax);
-    historyMap[exId] = history;
-  }
+  await Promise.all(
+    Array.from(relevantExerciseIds).map(async (exId) => {
+      const targetRepMax = selectedProgram?.exercises.find((pe) => pe.exerciseId === exId)?.targetRepMax;
+      const history = await getExerciseHistoryForUser(user.id, exId, targetRepMax);
+      historyMap[exId] = history;
+    })
+  );
 
   return {
     user: {

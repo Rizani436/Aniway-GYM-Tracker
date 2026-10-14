@@ -29,10 +29,6 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
   const isAuthPage =
     request.nextUrl.pathname.startsWith('/login') ||
     request.nextUrl.pathname.startsWith('/auth');
@@ -40,7 +36,41 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/manifest.json') ||
     request.nextUrl.pathname.startsWith('/icons');
 
-  if (!user && !isAuthPage && !isManifestOrPublic) {
+  if (isManifestOrPublic) {
+    return supabaseResponse;
+  }
+
+  // Fast-path: cek apakah ada cookie auth Supabase
+  const allCookies = request.cookies.getAll();
+  const hasAuthCookie = allCookies.some(
+    (c) => c.name.startsWith('sb-') && c.name.includes('-auth-token')
+  );
+
+  // Jika tidak ada cookie auth dan bukan di halaman login/auth, redirect langsung tanpa network call
+  if (!hasAuthCookie) {
+    if (!isAuthPage) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/login';
+      return NextResponse.redirect(url);
+    }
+    return supabaseResponse;
+  }
+
+  // Cek apakah request merupakan prefetch Next.js router
+  const isPrefetch =
+    request.headers.get('next-router-prefetch') === '1' ||
+    request.headers.get('purpose') === 'prefetch';
+
+  // Jika prefetch dan user memiliki auth cookie, biarkan lewat tanpa memblokir jaringan
+  if (isPrefetch && !isAuthPage) {
+    return supabaseResponse;
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user && !isAuthPage) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     return NextResponse.redirect(url);
