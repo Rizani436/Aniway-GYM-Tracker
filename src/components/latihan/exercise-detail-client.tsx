@@ -15,19 +15,20 @@ import {
   Repeat,
   Dumbbell,
 } from 'lucide-react';
-import {
-  getExerciseByIdAction,
-  deleteExerciseAction,
-} from '@/app/actions/latihan-actions';
+import { getExerciseByIdAction, deleteExerciseAction } from '@/app/actions/latihan-actions';
+import type { ProgressPoint } from '@/app/actions/statistik-actions';
 import { MUSCLE_LABELS, EQUIPMENT_LABELS } from '@/lib/constants';
 import { ExerciseFormModal } from './exercise-form-modal';
+import { ExerciseProgressChart } from './exercise-progress-chart';
 
 type ExerciseDetailType = Awaited<ReturnType<typeof getExerciseByIdAction>>;
 
 export function ExerciseDetailClient({
   initialExercise,
+  progress = [],
 }: {
   initialExercise: ExerciseDetailType;
+  progress?: ProgressPoint[];
 }) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -82,6 +83,8 @@ export function ExerciseDetailClient({
           )}
         </div>
       </div>
+
+      <ExerciseProgressChart data={progress} />
 
       <div className="p-5 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-3">
         <div className="flex items-center gap-2 flex-wrap">
