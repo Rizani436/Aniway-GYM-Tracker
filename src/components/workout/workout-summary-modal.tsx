@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Trophy, Clock, Dumbbell, Flame, CheckCircle, ArrowRight } from 'lucide-react';
+import { Trophy, Clock, Dumbbell, CheckCircle, ArrowRight } from 'lucide-react';
 import type { NewPRInfo } from '@/app/actions/workout-actions';
 
 interface WorkoutSummaryModalProps {
@@ -31,8 +31,36 @@ export function WorkoutSummaryModal({
   const durationStr =
     hours > 0 ? `${hours} jam ${remainingMinutes} mnt` : `${minutes} mnt ${seconds} dtk`;
 
+  const prCount = newPRs.length;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
+      {prCount > 0 && (
+        <style jsx global>{`
+          @keyframes pr-confetti-fall {
+            0% {
+              transform: translateY(-10vh) rotate(0deg);
+              opacity: 1;
+            }
+            100% {
+              transform: translateY(110vh) rotate(540deg);
+              opacity: 0;
+            }
+          }
+        `}</style>
+      )}
+      {prCount > 0 &&
+        Array.from({ length: 14 }, (_, i) => (
+          <div
+            key={i}
+            className="absolute top-0 w-2 h-3 rounded-[2px] pointer-events-none"
+            style={{
+              left: `${(i * 7 + 4) % 100}%`,
+              backgroundColor: ['#10b981', '#f59e0b', '#a1a1aa'][i % 3],
+              animation: `pr-confetti-fall ${1.6 + (i % 4) * 0.2}s ease-in ${i * 0.12}s 1 forwards`,
+            }}
+          />
+        ))}
       <div className="bg-zinc-900 border border-zinc-800 rounded-3xl w-full max-w-md p-6 shadow-2xl text-center space-y-6">
         {/* Celebration Header */}
         <div className="space-y-2">
@@ -46,6 +74,16 @@ export function WorkoutSummaryModal({
             Sesi latihan berhasil disimpan ke database. Konsistensi hari ini luar biasa!
           </p>
         </div>
+
+        {/* PR Banner — di atas statistik */}
+        {prCount > 0 && (
+          <div className="bg-gradient-to-br from-emerald-500/20 to-amber-500/20 border border-emerald-500/40 rounded-2xl py-3 px-4 text-center animate-in zoom-in duration-300">
+            <p className="text-lg font-black text-emerald-300">🏆 PR Baru!</p>
+            <p className="text-xs text-zinc-300 mt-1">
+              {newPRs.map((pr) => `${pr.exerciseName} — ${pr.weight}kg × ${pr.reps}`).join(' · ')}
+            </p>
+          </div>
+        )}
 
         {/* Stats Grid */}
         <div className="grid grid-cols-3 gap-2.5">
@@ -72,7 +110,7 @@ export function WorkoutSummaryModal({
         {newPRs.length > 0 && (
           <div className="space-y-2 text-left bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/30 rounded-2xl p-3.5">
             <div className="flex items-center gap-1.5 text-amber-400">
-              <Flame className="w-4 h-4 fill-amber-400" />
+              <span className="text-sm leading-none">🔥</span>
               <h4 className="text-xs font-bold uppercase tracking-wide">
                 Rekor Personal Baru Tercipta! ({newPRs.length})
               </h4>
