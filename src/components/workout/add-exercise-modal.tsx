@@ -34,6 +34,7 @@ export function AddExerciseModal({
 }: AddExerciseModalProps) {
   const [search, setSearch] = useState('');
   const [selectedMuscle, setSelectedMuscle] = useState<MuscleGroup | 'ALL'>('ALL');
+  const [preview, setPreview] = useState<ExerciseItem | null>(null);
 
   const filteredExercises = useMemo(() => {
     return availableExercises.filter((ex) => {
@@ -139,12 +140,22 @@ export function AddExerciseModal({
               >
                 <div className="flex items-center gap-2.5 min-w-0">
                   {ex.imageUrl ? (
-                    <img
-                      src={ex.imageUrl}
-                      alt={ex.name}
-                      loading="lazy"
-                      className="w-10 h-12 object-contain rounded-lg bg-zinc-950 border border-white/[0.10] shrink-0"
-                    />
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation(); // jangan trigger select gerakan
+                        setPreview(ex);
+                      }}
+                      aria-label={`Perbesar gambar ${ex.name}`}
+                      className="shrink-0 active:scale-90 transition-transform"
+                    >
+                      <img
+                        src={ex.imageUrl}
+                        alt={ex.name}
+                        loading="lazy"
+                        className="w-10 h-12 object-contain rounded-lg bg-zinc-950 border border-white/[0.10]"
+                      />
+                    </button>
                   ) : (
                     <span className="w-10 h-12 rounded-lg bg-zinc-950 border border-white/[0.10] flex items-center justify-center shrink-0">
                       <Dumbbell className="w-4 h-4 text-zinc-600" />
@@ -175,6 +186,59 @@ export function AddExerciseModal({
           )}
         </div>
       </div>
+
+      {/* Lightbox: foto posisi Awal & Akhir */}
+      {preview && (
+        <div
+          className="fixed inset-0 z-[60] bg-black/90 backdrop-blur-sm flex flex-col p-4 pt-[max(1rem,env(safe-area-inset-top))] animate-in fade-in duration-150"
+          onClick={() => setPreview(null)}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="font-bold text-sm text-zinc-100 truncate pr-3">
+              {preview.name}
+            </h4>
+            <button
+              type="button"
+              aria-label="Tutup"
+              onClick={() => setPreview(null)}
+              className="p-2 rounded-xl bg-white/[0.06] border border-white/[0.12] text-zinc-300 active:scale-90 transition-transform"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <div
+            className="flex-1 grid grid-cols-2 gap-2 min-h-0"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {[0, 1].map((i) => (
+              <div key={i} className="relative min-h-0">
+                <img
+                  src={preview.imageUrl!.replace(/0\.jpg$/, `${i}.jpg`)}
+                  alt={`${preview.name} — posisi ${i === 0 ? 'awal' : 'akhir'}`}
+                  className="w-full h-full object-contain rounded-2xl bg-[#0f1011] border border-white/[0.08]"
+                />
+                <span className="absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded bg-black/60 text-zinc-300">
+                  {i === 0 ? 'Awal' : 'Akhir'}
+                </span>
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setPreview(null);
+              onSelect(preview);
+              onClose();
+            }}
+            className="mt-3 w-full py-3.5 rounded-2xl bg-emerald-500 text-zinc-950 font-bold text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-transform touch-manipulation"
+          >
+            Pilih Gerakan Ini
+          </button>
+          <p className="text-[10px] text-zinc-500 text-center mt-2">
+            Tap di luar gambar untuk menutup
+          </p>
+        </div>
+      )}
     </div>
   );
 }
