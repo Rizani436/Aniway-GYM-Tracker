@@ -2,7 +2,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/supabase/server';
-import { SetType } from '@prisma/client';
+import { SetType, MuscleGroup } from '@prisma/client';
 import { format } from 'date-fns';
 import { revalidatePath } from 'next/cache';
 
@@ -152,4 +152,48 @@ export async function logBodyWeightAction(weight: number) {
   });
   revalidatePath('/profil');
   return { success: true };
+}
+
+// ============================================================
+// Breakdown volume per otot (7 hari)
+// ============================================================
+
+export type MuscleVolume = {
+  muscle: string; // enum MuscleGroup (label Indonesia di-mapping di UI)
+  volume: number; // kg (weight * reps)
+  sets: number;
+};
+
+export async function getMuscleVolumeAction(
+  days = 7
+): Promise<MuscleVolume[]> {
+  const user = await requireUser();
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  const sets = await prisma.setLog.findMany({
+    where: {
+      userId: user.id,
+      isCompleted: true,
+      setType: SetType.NORMAL,
+      performedAt: { gte: since },
+    },
+    select: {
+      weight: true,
+      reps: true,
+      exercise: { select: { primaryMuscle: true } },
+    },
+  });
+  // Volume data user aktif = ratusan baris, aman di-agg di JS.
+  const byMuscle = new Map<MuscleGroup, { volume: number; sets: number }>();
+  for (const s of sets) {
+    const cur = byMuscle.get(s.exercise.primaryMuscle) ?? {
+      volume: 0,
+      sets: 0,
+    };
+    cur.volume += s.weight * s.reps;
+    cur.sets += 1;
+    byMuscle.set(s.exercise.primaryMuscle, cur);
+  }
+  return [...byMuscle.entries()]
+    .map(([m, v]) => ({ muscle: m, volume: v.volume, sets: v.sets }))
+    .sort((a, b) => b.volume - a.volume);
 }

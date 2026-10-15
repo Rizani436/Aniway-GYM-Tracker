@@ -1,7 +1,11 @@
 import { getAuthenticatedUser } from '@/lib/supabase/server';
 import { signOutAction } from '@/app/login/actions';
-import { getBodyWeightLogsAction } from '@/app/actions/statistik-actions';
+import {
+  getBodyWeightLogsAction,
+  getMuscleVolumeAction,
+} from '@/app/actions/statistik-actions';
 import { BodyWeightCard } from '@/components/profil/body-weight-card';
+import { MuscleVolumeCard } from '@/components/profil/muscle-volume-card';
 import { User, LogOut, ShieldCheck, Dumbbell, Sparkles } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
@@ -13,6 +17,13 @@ export default async function ProfilPage() {
     data = await getBodyWeightLogsAction();
   } catch {
     data = { logs: [], trend7d: null, latest: null };
+  }
+
+  let muscleVolume: Awaited<ReturnType<typeof getMuscleVolumeAction>> = [];
+  try {
+    muscleVolume = await getMuscleVolumeAction();
+  } catch {
+    // DB flaky: kartu tampil empty state, jangan crash halaman profil.
   }
 
   return (
@@ -40,6 +51,9 @@ export default async function ProfilPage() {
 
       {/* Berat Badan */}
       <BodyWeightCard data={data} />
+
+      {/* Volume per Otot (7 hari) */}
+      <MuscleVolumeCard data={muscleVolume} />
 
       {/* App Info Box */}
       <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06] space-y-2">
