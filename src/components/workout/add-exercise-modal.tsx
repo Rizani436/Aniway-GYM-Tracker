@@ -135,9 +135,22 @@ export function AddExerciseModal({
                   onSelect(ex);
                   onClose();
                 }}
-                className="w-full text-left py-2.5 px-3 rounded-xl hover:bg-zinc-800/70 transition-colors flex items-center justify-between group"
+                className="w-full text-left py-2.5 px-3 rounded-xl hover:bg-zinc-800/70 transition-colors flex items-center justify-between gap-2 group"
               >
-                <div>
+                <div className="flex items-center gap-2.5 min-w-0">
+                  {ex.imageUrl ? (
+                    <img
+                      src={ex.imageUrl}
+                      alt={ex.name}
+                      loading="lazy"
+                      className="w-10 h-12 object-contain rounded-lg bg-zinc-950 border border-white/[0.10] shrink-0"
+                    />
+                  ) : (
+                    <span className="w-10 h-12 rounded-lg bg-zinc-950 border border-white/[0.10] flex items-center justify-center shrink-0">
+                      <Dumbbell className="w-4 h-4 text-zinc-600" />
+                    </span>
+                  )}
+                  <div className="min-w-0">
                   <h4 className="font-semibold text-sm text-zinc-100 group-hover:text-emerald-400 transition-colors">
                     {ex.name}
                   </h4>
@@ -151,6 +164,7 @@ export function AddExerciseModal({
                     <span className="text-[11px] text-zinc-500 font-mono">
                       ±{ex.weightIncrement}kg
                     </span>
+                  </div>
                   </div>
                 </div>
                 <span className="text-xs font-semibold text-zinc-400 group-hover:text-emerald-400 bg-zinc-800 group-hover:bg-emerald-500/20 px-2.5 py-1 rounded-lg transition-colors">
