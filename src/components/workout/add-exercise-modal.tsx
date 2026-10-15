@@ -11,6 +11,7 @@ export interface ExerciseItem {
   primaryMuscle: MuscleGroup;
   equipment: EquipmentType;
   weightIncrement: number;
+  imageUrl?: string | null;
   instructions?: string | null;
 }
 

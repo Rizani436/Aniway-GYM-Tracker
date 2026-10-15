@@ -86,6 +86,20 @@ export function ExerciseDetailClient({
 
       <ExerciseProgressChart data={progress} />
 
+      {exercise.imageUrl && (
+        <div className="grid grid-cols-2 gap-2">
+          {[0, 1].map((i) => (
+            <img
+              key={i}
+              src={exercise.imageUrl!.replace(/0\.jpg$/, `${i}.jpg`)}
+              alt={`${exercise.name} — posisi ${i === 0 ? 'awal' : 'akhir'}`}
+              loading="lazy"
+              className="w-full aspect-[3/4] object-contain rounded-2xl bg-zinc-900 border border-zinc-800"
+            />
+          ))}
+        </div>
+      )}
+
       <div className="p-5 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-3">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-400">

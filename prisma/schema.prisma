@@ -100,6 +100,7 @@ model Exercise {
   tips             String[]          // Tips teknik & eksekusi
   commonMistakes   String[]          // Kesalahan umum yang harus dihindari
   videoUrl         String?
+  imageUrl         String?           // Foto demonstrasi gerakan (CDN free-exercise-db)
   alternatives     String[]          // Nama gerakan alternatif jika alat penuh
   isCustom         Boolean           @default(false)
   isArchived       Boolean           @default(false)

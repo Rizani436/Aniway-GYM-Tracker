@@ -553,7 +553,16 @@ export function LatihanTabsClient({
                   className="block p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.07] hover:border-white/[0.12] active:scale-[0.99] transition-all"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <div>
+                    <div className="flex items-start gap-3 min-w-0">
+                      {ex.imageUrl && (
+                        <img
+                          src={ex.imageUrl}
+                          alt={ex.name}
+                          loading="lazy"
+                          className="w-12 h-16 object-contain rounded-xl bg-zinc-900 border border-zinc-800/80 shrink-0"
+                        />
+                      )}
+                      <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <h3 className="font-bold text-sm text-zinc-100">
                           {ex.name}
@@ -569,6 +578,7 @@ export function LatihanTabsClient({
                         {EQUIPMENT_LABELS[ex.equipment]} • Increment +
                         {ex.weightIncrement} kg
                       </p>
+                      </div>
                     </div>
                     <ChevronRight className="w-5 h-5 text-zinc-500 shrink-0 mt-0.5" />
                   </div>

@@ -12,8 +12,57 @@ interface SeedExercise {
   tips: string[];
   commonMistakes: string[];
   videoUrl: string;
+  imageUrl?: string;
   alternatives: string[];
 }
+
+// Foto demonstrasi gerakan (sumber: free-exercise-db, Unlicense, via jsDelivr CDN)
+// Path foto: /0.jpg = posisi awal, /1.jpg = posisi akhir (detail page menampilkan keduanya).
+const IMAGE_URLS: Record<string, string> = {
+  '45-Degree Leg Press Machine': 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Leg_Press/0.jpg',
+  'Abdominal Crunch Machine': 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Ab_Crunch_Machine/0.jpg',
+  'Assisted Pull-Up Machine': 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Band_Assisted_Pull-Up/0.jpg',
+  'Bayesian Cable Curl (Single-Arm Behind Back)': 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Standing_One-Arm_Cable_Curl/0.jpg',
+  'Cable Bicep Curl (EZ-Bar / Straight Bar)': 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Standing_Biceps_Cable_Curl/0.jpg',
+  'Cable Face Pull': 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Face_Pull/0.jpg',
+  'Cable Lateral Raise': 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Cable_Seated_Lateral_Raise/0.jpg',
+  'Cable Rope Hammer Curl': 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Cable_Hammer_Curls_-_Rope_Attachment/0.jpg',
+  'Chest-Supported Machine Row': 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Seated_Cable_Rows/0.jpg',
+  'Close-Grip Neutral Lat Pulldown': 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Close-Grip_Front_Lat_Pulldown/0.jpg',
+  'Decline Chest Press Machine': 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Leverage_Decline_Chest_Press/0.jpg',
+  'Hack Squat Machine': 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Hack_Squat/0.jpg',
+  'High-Pulley Overhead Cable Curl': 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Overhead_Cable_Curl/0.jpg',
+  'Hip Thrust Machine / Smith Machine Hip Thrust': 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Smith_Machine_Hip_Raise/0.jpg',
+  'Horizontal Seated Leg Press Machine': 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Leg_Press/0.jpg',
+  'Incline Chest Press Machine': 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Incline_Cable_Chest_Press/0.jpg',
+  'Iso-Lateral High Row Machine (Plate Loaded)': 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Leverage_High_Row/0.jpg',
+  'Kneeling Cable Crunch': 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Kneeling_Cable_Crunch_With_Alternating_Oblique_Twists/0.jpg',
+  'Lateral Raise Machine': 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Seated_Side_Lateral_Raise/0.jpg',
+  'Leg Press Calf Raise': 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Calf_Press_On_The_Leg_Press_Machine/0.jpg',
+  'Lying Leg Curl Machine': 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Lying_Leg_Curls/0.jpg',
+  'Overhead Cable Tricep Extension': 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Cable_One_Arm_Tricep_Extension/0.jpg',
+  'Pec Deck / Machine Chest Fly': 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Butterfly/0.jpg',
+  'Preacher Curl Machine': 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Preacher_Curl/0.jpg',
+  'Reverse Pec Deck (Rear Delt Fly Machine)': 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Cable_Rear_Delt_Fly/0.jpg',
+  'Seated Cable Row': 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Seated_Cable_Rows/0.jpg',
+  'Seated Calf Raise Machine': 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Barbell_Seated_Calf_Raise/0.jpg',
+  'Seated Chest Press Machine': 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Leverage_Chest_Press/0.jpg',
+  'Seated Dip Machine (Tricep Press)': 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Dip_Machine/0.jpg',
+  'Seated Leg Curl Machine': 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Seated_Leg_Curl/0.jpg',
+  'Seated Leg Extension Machine': 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Leg_Extensions/0.jpg',
+  'Seated Overhead Shoulder Press Machine': 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Smith_Machine_Overhead_Shoulder_Press/0.jpg',
+  'Smith Machine Flat Bench Press': 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Smith_Machine_Bench_Press/0.jpg',
+  'Smith Machine Overhead Press': 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Smith_Machine_Overhead_Shoulder_Press/0.jpg',
+  'Smith Machine Romanian Deadlift (RDL)': 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Romanian_Deadlift/0.jpg',
+  'Smith Machine Squat': 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Smith_Machine_Squat/0.jpg',
+  'Standing Cable Chest Fly (Mid Pulley)': 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Flat_Bench_Cable_Flyes/0.jpg',
+  'Standing Calf Raise Machine': 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Rocking_Standing_Calf_Raise/0.jpg',
+  'Straight-Arm Cable Pulldown': 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Rope_Straight-Arm_Pulldown/0.jpg',
+  'Torso Rotation Machine (Obliques)': 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Plate_Twist/0.jpg',
+  'Tricep Rope Pushdown (Cable)': 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Triceps_Pushdown_-_Rope_Attachment/0.jpg',
+  'V-Bar Cable Tricep Pushdown': 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Triceps_Pushdown_-_V-Bar_Attachment/0.jpg',
+  'Wide-Grip Lat Pulldown Machine': 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Wide-Grip_Lat_Pulldown/0.jpg',
+};
 
 const machineExercises: SeedExercise[] = [
   // ==================== 1. DADA / CHEST (6 Gerakan) ====================
@@ -1072,6 +1121,7 @@ async function main() {
           tips: ex.tips,
           commonMistakes: ex.commonMistakes,
           videoUrl: ex.videoUrl,
+          imageUrl: IMAGE_URLS[ex.name] ?? existing.imageUrl ?? null,
           alternatives: ex.alternatives,
           isCustom: false,
           isArchived: false,
@@ -1091,6 +1141,7 @@ async function main() {
           tips: ex.tips,
           commonMistakes: ex.commonMistakes,
           videoUrl: ex.videoUrl,
+          imageUrl: IMAGE_URLS[ex.name] ?? null,
           alternatives: ex.alternatives,
           isCustom: false,
           isArchived: false,

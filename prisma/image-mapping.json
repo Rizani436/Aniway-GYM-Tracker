@@ -1,0 +1,260 @@
+{
+ "Incline Chest Press Machine": {
+  "images": [
+   "Incline_Cable_Chest_Press/0.jpg",
+   "Incline_Cable_Chest_Press/1.jpg"
+  ]
+ },
+ "Decline Chest Press Machine": {
+  "images": [
+   "Leverage_Decline_Chest_Press/0.jpg",
+   "Leverage_Decline_Chest_Press/1.jpg"
+  ]
+ },
+ "Smith Machine Flat Bench Press": {
+  "images": [
+   "Smith_Machine_Bench_Press/0.jpg",
+   "Smith_Machine_Bench_Press/1.jpg"
+  ]
+ },
+ "Wide-Grip Lat Pulldown Machine": {
+  "images": [
+   "Wide-Grip_Lat_Pulldown/0.jpg",
+   "Wide-Grip_Lat_Pulldown/1.jpg"
+  ]
+ },
+ "Close-Grip Neutral Lat Pulldown": {
+  "images": [
+   "Close-Grip_Front_Lat_Pulldown/0.jpg",
+   "Close-Grip_Front_Lat_Pulldown/1.jpg"
+  ]
+ },
+ "Assisted Pull-Up Machine": {
+  "images": [
+   "Band_Assisted_Pull-Up/0.jpg",
+   "Band_Assisted_Pull-Up/1.jpg"
+  ]
+ },
+ "Straight-Arm Cable Pulldown": {
+  "images": [
+   "Rope_Straight-Arm_Pulldown/0.jpg",
+   "Rope_Straight-Arm_Pulldown/1.jpg"
+  ]
+ },
+ "Seated Overhead Shoulder Press Machine": {
+  "images": [
+   "Smith_Machine_Overhead_Shoulder_Press/0.jpg",
+   "Smith_Machine_Overhead_Shoulder_Press/1.jpg"
+  ]
+ },
+ "Cable Lateral Raise": {
+  "images": [
+   "Cable_Seated_Lateral_Raise/0.jpg",
+   "Cable_Seated_Lateral_Raise/1.jpg"
+  ]
+ },
+ "Smith Machine Overhead Press": {
+  "images": [
+   "Smith_Machine_Overhead_Shoulder_Press/0.jpg",
+   "Smith_Machine_Overhead_Shoulder_Press/1.jpg"
+  ]
+ },
+ "Cable Rope Hammer Curl": {
+  "images": [
+   "Cable_Hammer_Curls_-_Rope_Attachment/0.jpg",
+   "Cable_Hammer_Curls_-_Rope_Attachment/1.jpg"
+  ]
+ },
+ "Overhead Cable Tricep Extension": {
+  "images": [
+   "Cable_One_Arm_Tricep_Extension/0.jpg",
+   "Cable_One_Arm_Tricep_Extension/1.jpg"
+  ]
+ },
+ "Seated Leg Curl Machine": {
+  "images": [
+   "Seated_Leg_Curl/0.jpg",
+   "Seated_Leg_Curl/1.jpg"
+  ]
+ },
+ "Smith Machine Squat": {
+  "images": [
+   "Smith_Machine_Squat/0.jpg",
+   "Smith_Machine_Squat/1.jpg"
+  ]
+ },
+ "Hip Thrust Machine / Smith Machine Hip Thrust": {
+  "images": [
+   "Smith_Machine_Hip_Raise/0.jpg",
+   "Smith_Machine_Hip_Raise/1.jpg"
+  ]
+ },
+ "Standing Calf Raise Machine": {
+  "images": [
+   "Rocking_Standing_Calf_Raise/0.jpg",
+   "Rocking_Standing_Calf_Raise/1.jpg"
+  ]
+ },
+ "Seated Calf Raise Machine": {
+  "images": [
+   "Barbell_Seated_Calf_Raise/0.jpg",
+   "Barbell_Seated_Calf_Raise/1.jpg"
+  ]
+ },
+ "Leg Press Calf Raise": {
+  "images": [
+   "Calf_Press_On_The_Leg_Press_Machine/0.jpg",
+   "Calf_Press_On_The_Leg_Press_Machine/1.jpg"
+  ]
+ },
+ "Kneeling Cable Crunch": {
+  "images": [
+   "Kneeling_Cable_Crunch_With_Alternating_Oblique_Twists/0.jpg",
+   "Kneeling_Cable_Crunch_With_Alternating_Oblique_Twists/1.jpg"
+  ]
+ },
+ "Seated Chest Press Machine": {
+  "images": [
+   "Leverage_Chest_Press/0.jpg",
+   "Leverage_Chest_Press/1.jpg"
+  ]
+ },
+ "Pec Deck / Machine Chest Fly": {
+  "images": [
+   "Butterfly/0.jpg",
+   "Butterfly/1.jpg"
+  ]
+ },
+ "Standing Cable Chest Fly (Mid Pulley)": {
+  "images": [
+   "Flat_Bench_Cable_Flyes/0.jpg",
+   "Flat_Bench_Cable_Flyes/1.jpg"
+  ]
+ },
+ "Seated Cable Row": {
+  "images": [
+   "Seated_Cable_Rows/0.jpg",
+   "Seated_Cable_Rows/1.jpg"
+  ]
+ },
+ "Chest-Supported Machine Row": {
+  "images": [
+   "Seated_Cable_Rows/0.jpg",
+   "Seated_Cable_Rows/1.jpg"
+  ]
+ },
+ "Iso-Lateral High Row Machine (Plate Loaded)": {
+  "images": [
+   "Leverage_High_Row/0.jpg",
+   "Leverage_High_Row/1.jpg"
+  ]
+ },
+ "Lateral Raise Machine": {
+  "images": [
+   "Seated_Side_Lateral_Raise/0.jpg",
+   "Seated_Side_Lateral_Raise/1.jpg"
+  ]
+ },
+ "Reverse Pec Deck (Rear Delt Fly Machine)": {
+  "images": [
+   "Cable_Rear_Delt_Fly/0.jpg",
+   "Cable_Rear_Delt_Fly/1.jpg"
+  ]
+ },
+ "Cable Face Pull": {
+  "images": [
+   "Face_Pull/0.jpg",
+   "Face_Pull/1.jpg"
+  ]
+ },
+ "Preacher Curl Machine": {
+  "images": [
+   "Preacher_Curl/0.jpg",
+   "Preacher_Curl/1.jpg"
+  ]
+ },
+ "Cable Bicep Curl (EZ-Bar / Straight Bar)": {
+  "images": [
+   "Standing_Biceps_Cable_Curl/0.jpg",
+   "Standing_Biceps_Cable_Curl/1.jpg"
+  ]
+ },
+ "Bayesian Cable Curl (Single-Arm Behind Back)": {
+  "images": [
+   "Standing_One-Arm_Cable_Curl/0.jpg",
+   "Standing_One-Arm_Cable_Curl/1.jpg"
+  ]
+ },
+ "High-Pulley Overhead Cable Curl": {
+  "images": [
+   "Overhead_Cable_Curl/0.jpg",
+   "Overhead_Cable_Curl/1.jpg"
+  ]
+ },
+ "Tricep Rope Pushdown (Cable)": {
+  "images": [
+   "Triceps_Pushdown_-_Rope_Attachment/0.jpg",
+   "Triceps_Pushdown_-_Rope_Attachment/1.jpg"
+  ]
+ },
+ "Seated Dip Machine (Tricep Press)": {
+  "images": [
+   "Dip_Machine/0.jpg",
+   "Dip_Machine/1.jpg"
+  ]
+ },
+ "V-Bar Cable Tricep Pushdown": {
+  "images": [
+   "Triceps_Pushdown_-_V-Bar_Attachment/0.jpg",
+   "Triceps_Pushdown_-_V-Bar_Attachment/1.jpg"
+  ]
+ },
+ "45-Degree Leg Press Machine": {
+  "images": [
+   "Leg_Press/0.jpg",
+   "Leg_Press/1.jpg"
+  ]
+ },
+ "Horizontal Seated Leg Press Machine": {
+  "images": [
+   "Leg_Press/0.jpg",
+   "Leg_Press/1.jpg"
+  ]
+ },
+ "Hack Squat Machine": {
+  "images": [
+   "Hack_Squat/0.jpg",
+   "Hack_Squat/1.jpg"
+  ]
+ },
+ "Seated Leg Extension Machine": {
+  "images": [
+   "Leg_Extensions/0.jpg",
+   "Leg_Extensions/1.jpg"
+  ]
+ },
+ "Lying Leg Curl Machine": {
+  "images": [
+   "Lying_Leg_Curls/0.jpg",
+   "Lying_Leg_Curls/1.jpg"
+  ]
+ },
+ "Smith Machine Romanian Deadlift (RDL)": {
+  "images": [
+   "Romanian_Deadlift/0.jpg",
+   "Romanian_Deadlift/1.jpg"
+  ]
+ },
+ "Abdominal Crunch Machine": {
+  "images": [
+   "Ab_Crunch_Machine/0.jpg",
+   "Ab_Crunch_Machine/1.jpg"
+  ]
+ },
+ "Torso Rotation Machine (Obliques)": {
+  "images": [
+   "Plate_Twist/0.jpg",
+   "Plate_Twist/1.jpg"
+  ]
+ }
+}

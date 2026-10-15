@@ -41,6 +41,7 @@ interface WorkoutExerciseState {
   primaryMuscle: MuscleGroup;
   equipment: EquipmentType;
   weightIncrement: number;
+  imageUrl?: string | null;
   restSeconds: number;
   targetRepMin?: number;
   targetRepMax?: number;
@@ -112,6 +113,7 @@ export function WorkoutRunner({
   });
 
   const [isSaving, setIsSaving] = useState(false);
+  const [expandedImageIdx, setExpandedImageIdx] = useState<number | null>(null);
   const [draftBanner, setDraftBanner] = useState<{ exists: boolean; date?: string }>({
     exists: false,
   });
@@ -156,6 +158,7 @@ export function WorkoutRunner({
         primaryMuscle: pe.exercise.primaryMuscle,
         equipment: pe.exercise.equipment,
         weightIncrement,
+        imageUrl: pe.exercise.imageUrl ?? null,
         restSeconds: pe.restSeconds || user.defaultRestTimer || 90,
         targetRepMin: pe.targetRepMin,
         targetRepMax: pe.targetRepMax,
@@ -396,6 +399,7 @@ export function WorkoutRunner({
           primaryMuscle: newEx.primaryMuscle,
           equipment: newEx.equipment,
           weightIncrement: newEx.weightIncrement || 2.5,
+          imageUrl: newEx.imageUrl ?? null,
           restSeconds: oldEx.restSeconds || 90,
           notes: `(Pengganti ${oldEx.name})`,
           historyInfo: history,
@@ -427,6 +431,7 @@ export function WorkoutRunner({
         primaryMuscle: newEx.primaryMuscle,
         equipment: newEx.equipment,
         weightIncrement: newEx.weightIncrement || 2.5,
+        imageUrl: newEx.imageUrl ?? null,
         restSeconds: user.defaultRestTimer || 90,
         historyInfo: history,
         sets,
@@ -624,7 +629,30 @@ export function WorkoutRunner({
             >
               {/* Exercise Card Header */}
               <div className="flex items-start justify-between gap-2">
-                <div>
+                <div className="flex items-start gap-2.5 min-w-0">
+                  {ex.imageUrl && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setExpandedImageIdx(
+                          expandedImageIdx === exIndex ? null : exIndex
+                        )
+                      }
+                      className="relative w-11 h-14 rounded-xl overflow-hidden border border-white/[0.1] bg-[#0f1011] shrink-0 active:scale-95 transition-transform"
+                      aria-label={`Lihat cara gerakan ${ex.name}`}
+                    >
+                      <img
+                        src={ex.imageUrl}
+                        alt={ex.name}
+                        loading="lazy"
+                        className="w-full h-full object-contain"
+                      />
+                      <span className="absolute bottom-0 inset-x-0 bg-black/55 text-[8px] text-zinc-300 text-center py-0.5">
+                        {expandedImageIdx === exIndex ? 'Tutup' : 'Cara'}
+                      </span>
+                    </button>
+                  )}
+                  <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <h3 className="font-bold text-white text-sm">{ex.name}</h3>
                   </div>
@@ -636,6 +664,7 @@ export function WorkoutRunner({
                     <span>{EQUIPMENT_TRANSLATIONS[ex.equipment]}</span>
                     <span>•</span>
                     <span className="font-mono">±{ex.weightIncrement}kg</span>
+                  </div>
                   </div>
                 </div>
 
@@ -666,6 +695,25 @@ export function WorkoutRunner({
                   </button>
                 </div>
               </div>
+
+              {/* Expanded: foto posisi awal & akhir */}
+              {expandedImageIdx === exIndex && ex.imageUrl && (
+                <div className="grid grid-cols-2 gap-2">
+                  {[0, 1].map((i) => (
+                    <div key={i} className="relative">
+                      <img
+                        src={ex.imageUrl!.replace(/0\.jpg$/, `${i}.jpg`)}
+                        alt={`${ex.name} — posisi ${i === 0 ? 'awal' : 'akhir'}`}
+                        loading="lazy"
+                        className="w-full aspect-[3/4] object-contain rounded-xl bg-[#0f1011] border border-white/[0.08]"
+                      />
+                      <span className="absolute top-1.5 left-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded bg-black/60 text-zinc-300">
+                        {i === 0 ? 'Awal' : 'Akhir'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {/* Progressive Overload Suggestion Badge */}
               {ex.historyInfo?.progressiveOverloadSuggestion && (
