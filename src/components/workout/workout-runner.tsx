@@ -22,6 +22,7 @@ import {
 import Link from 'next/link';
 
 import { ExerciseSetRow, type SetRowData } from './exercise-set-row';
+import { PlateCalculatorSheet } from './plate-calculator-sheet';
 import { WorkoutTimerBar } from './workout-timer-bar';
 import { AddExerciseModal, type ExerciseItem } from './add-exercise-modal';
 import { WorkoutSummaryModal } from './workout-summary-modal';
@@ -572,6 +573,9 @@ export function WorkoutRunner({
             </div>
           </div>
 
+          {/* Kalkulator Plat */}
+          <PlateCalculatorSheet />
+
           {/* Tombol Selesai */}
           <button
             type="button"
@@ -731,6 +735,15 @@ export function WorkoutRunner({
             Tambah Gerakan Lain
           </button>
         )}
+
+        {/* Catatan Sesi */}
+        <textarea
+          value={sessionNotes}
+          onChange={(e) => setSessionNotes(e.target.value)}
+          placeholder="Catatan sesi (perasaan, kondisi tubuh, catatan alat…)"
+          rows={2}
+          className="w-full px-3.5 py-3 bg-white/[0.03] border border-white/[0.08] rounded-2xl text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/40 resize-none transition-colors"
+        />
       </div>
 
       {/* Floating Rest Timer Bar */}

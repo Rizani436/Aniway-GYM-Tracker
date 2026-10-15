@@ -1,9 +1,11 @@
 'use client';
 
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { SetType } from '@prisma/client';
 import { Check, Trash2, Plus, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+const RPE_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 export interface SetRowData {
   id: string;
@@ -38,6 +40,8 @@ export const ExerciseSetRow = memo(function ExerciseSetRow({
   onDelete,
   canDelete,
 }: ExerciseSetRowProps) {
+  const [isRpeOpen, setIsRpeOpen] = useState(false);
+
   const cycleSetType = () => {
     const types: SetType[] = [SetType.NORMAL, SetType.WARMUP, SetType.DROPSET, SetType.FAILURE];
     const currentIndex = types.indexOf(set.setType);
@@ -74,7 +78,7 @@ export const ExerciseSetRow = memo(function ExerciseSetRow({
   return (
     <div
       className={cn(
-        'group flex items-center gap-1 py-1.5 px-1.5 rounded-xl transition-colors duration-150 border',
+        'group flex flex-wrap items-center gap-1 py-1.5 px-1.5 rounded-xl transition-colors duration-150 border',
         set.isCompleted
           ? 'bg-emerald-500/[0.08] border-emerald-500/30 text-emerald-100'
           : 'bg-white/[0.03] border-white/[0.07] text-zinc-200'
@@ -173,6 +177,22 @@ export const ExerciseSetRow = memo(function ExerciseSetRow({
         </button>
       </div>
 
+      {/* RPE + tombol centang */}
+      <button
+        type="button"
+        onClick={() => setIsRpeOpen((v) => !v)}
+        className={cn(
+          'h-9 px-1.5 rounded-lg text-[10px] font-bold font-mono flex items-center justify-center shrink-0 transition-transform active:scale-90 touch-manipulation',
+          set.rpe
+            ? 'bg-sky-500/15 text-sky-300 border border-sky-500/30'
+            : 'bg-white/[0.06] text-zinc-500 border border-transparent'
+        )}
+        title="RPE — tingkat kesulitan set (1–10)"
+        aria-label={set.rpe ? `RPE ${set.rpe}, ubah` : 'Set RPE'}
+      >
+        {set.rpe ? `R${set.rpe}` : 'RPE'}
+      </button>
+
       {/* Tombol Centang Selesai — glow saat aktif */}
       <button
         type="button"
@@ -200,6 +220,42 @@ export const ExerciseSetRow = memo(function ExerciseSetRow({
         >
           <Trash2 className="w-3.5 h-3.5" />
         </button>
+      )}
+
+      {/* Popover RPE — grid 1–10 + kosongkan; flex-wrap + w-full = baris baru penuh lebar */}
+      {isRpeOpen && (
+        <div className="w-full pt-1.5 pb-1">
+          <div className="grid grid-cols-5 gap-1.5 p-2 bg-black/40 border border-white/[0.08] rounded-xl">
+            {RPE_OPTIONS.map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => {
+                  onChange({ rpe: n });
+                  setIsRpeOpen(false);
+                }}
+                className={cn(
+                  'h-9 rounded-lg text-xs font-bold font-mono transition-colors touch-manipulation',
+                  set.rpe === n
+                    ? 'bg-sky-500 text-zinc-950'
+                    : 'bg-white/[0.06] text-zinc-300 active:bg-white/[0.14]'
+                )}
+              >
+                {n}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => {
+                onChange({ rpe: null });
+                setIsRpeOpen(false);
+              }}
+              className="h-9 rounded-lg text-[10px] font-bold bg-white/[0.04] text-zinc-500 active:bg-white/[0.1] touch-manipulation"
+            >
+              Kosong
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
