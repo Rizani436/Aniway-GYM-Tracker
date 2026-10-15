@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import {
@@ -133,7 +134,10 @@ export function RiwayatClient({
         </div>
 
         {/* Total PRs */}
-        <div className="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-3.5 flex items-center gap-3">
+        <Link
+          href="/riwayat/pr"
+          className="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-3.5 flex items-center gap-3"
+        >
           <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 shrink-0">
             <Trophy className="w-5 h-5" />
           </div>
@@ -142,8 +146,9 @@ export function RiwayatClient({
             <p className="text-xl font-extrabold text-white font-mono">
               {stats.totalPRs} <span className="text-xs font-normal text-zinc-400">Kali</span>
             </p>
+            <p className="text-[10px] font-medium text-emerald-400">Lihat PR →</p>
           </div>
-        </div>
+        </Link>
       </div>
 
       {/* Activity Heatmap */}
