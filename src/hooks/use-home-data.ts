@@ -6,7 +6,7 @@ import { getHomeDataAction } from '@/app/actions/latihan-actions';
 export type HomeData = Awaited<ReturnType<typeof getHomeDataAction>>;
 
 /** Data Home dengan cache klien: instan saat revisit, refresh di background. */
-export function useHomeData(initialData?: HomeData) {
+export function useHomeData(initialData: HomeData) {
   return useQuery({
     queryKey: ['home'],
     queryFn: () => getHomeDataAction(),

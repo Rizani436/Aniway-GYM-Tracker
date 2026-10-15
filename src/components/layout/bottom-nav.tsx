@@ -2,7 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Home, PlayCircle, History, Dumbbell, User } from 'lucide-react';
+import { prefetchHomeData } from '@/hooks/use-home-data';
 
 const navItems = [
   { href: '/', label: 'Home', icon: Home },
@@ -14,6 +17,11 @@ const navItems = [
 
 export function BottomNav() {
   const pathname = usePathname();
+  const queryClient = useQueryClient();
+  // Guard sekali jalan: onTouchStart sudah prefetch → skip onClick yang mengikuti.
+  const touchHandled = useRef(false);
+
+  const prefetchHome = () => void prefetchHomeData(queryClient);
 
   // Sembunyikan bottom nav saat di halaman login atau mode workout aktif
   if (pathname.startsWith('/login') || pathname.startsWith('/workout')) {
@@ -31,11 +39,29 @@ export function BottomNav() {
                 ? pathname === '/'
                 : pathname.startsWith(item.href);
 
+            const homeHandlers =
+              item.href === '/'
+                ? {
+                    onTouchStart: () => {
+                      touchHandled.current = true;
+                      prefetchHome();
+                    },
+                    onClick: () => {
+                      if (touchHandled.current) {
+                        touchHandled.current = false;
+                        return;
+                      }
+                      prefetchHome();
+                    },
+                  }
+                : {};
+
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 prefetch={true}
+                {...homeHandlers}
                 className={`relative flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-all duration-200 active:scale-95 ${
                   isActive
                     ? 'text-emerald-400 font-semibold'
