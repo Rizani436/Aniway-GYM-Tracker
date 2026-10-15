@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { getAuthenticatedUser } from '@/lib/supabase/server';
 import { getHomeDataAction } from '@/app/actions/latihan-actions';
-import { Dumbbell, Layers, Play, Plus, LogOut, ChevronRight, Zap } from 'lucide-react';
+import { Dumbbell, Layers, Play, Plus, LogOut, ChevronRight, Zap, Repeat } from 'lucide-react';
 import { signOutAction } from './login/actions';
 
 export const dynamic = 'force-dynamic';
@@ -11,7 +11,7 @@ export default async function HomePage() {
   // walau juga dipanggil di dalam getHomeDataAction().
   const [user, data] = await Promise.all([getAuthenticatedUser(), getHomeDataAction()]);
 
-  const { programs, exerciseCount } = data;
+  const { programs, exerciseCount, lastSession } = data;
 
   return (
     <main className="min-h-screen bg-[#08090a] text-[#f7f8f8] pb-28 max-w-md mx-auto px-4 pt-[max(1.5rem,env(safe-area-inset-top))] space-y-5">
@@ -84,22 +84,50 @@ export default async function HomePage() {
         <p className="text-xs text-zinc-300 leading-relaxed">
           Catat set, repetisi, dan beban secara instan dengan rest timer audio otomatis dan wake lock layar.
         </p>
-        <div className="flex gap-2 pt-0.5">
-          <Link
-            href="/workout"
-            className="flex-1 py-3.5 rounded-xl bg-emerald-500 text-zinc-950 font-bold text-xs flex items-center justify-center gap-1.5 shadow-[0_4px_16px_rgba(16,185,129,0.3)] active:scale-[0.98] transition-transform touch-manipulation"
-          >
-            <Play className="w-3.5 h-3.5 fill-current" />
-            Mulai Sesi Kosong
-          </Link>
-          <Link
-            href="/latihan"
-            className="px-4 py-3.5 rounded-xl bg-white/[0.06] border border-white/[0.1] text-zinc-200 font-semibold text-xs flex items-center gap-1 active:scale-[0.98] transition-transform touch-manipulation"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Program
-          </Link>
-        </div>
+        {lastSession ? (
+          <div className="grid grid-cols-2 gap-2 pt-0.5">
+            <Link
+              href="/workout"
+              className="py-3.5 rounded-xl bg-emerald-500 text-zinc-950 font-bold text-xs flex items-center justify-center gap-1.5 shadow-[0_4px_16px_rgba(16,185,129,0.3)] active:scale-[0.98] transition-transform touch-manipulation"
+            >
+              <Play className="w-3.5 h-3.5 fill-current" />
+              Mulai Sesi Kosong
+            </Link>
+            <Link
+              href="/latihan"
+              className="px-4 py-3.5 rounded-xl bg-white/[0.06] border border-white/[0.1] text-zinc-200 font-semibold text-xs flex items-center justify-center gap-1 active:scale-[0.98] transition-transform touch-manipulation"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Program
+            </Link>
+            <Link
+              href={`/workout?repeatSessionId=${lastSession.id}`}
+              className="col-span-2 py-3.5 rounded-xl bg-white/[0.06] border border-white/[0.1] text-zinc-200 font-semibold text-xs flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform touch-manipulation"
+            >
+              <Repeat className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="truncate max-w-[220px]">
+                Ulangi: {lastSession.name || 'Sesi Terakhir'}
+              </span>
+            </Link>
+          </div>
+        ) : (
+          <div className="flex gap-2 pt-0.5">
+            <Link
+              href="/workout"
+              className="flex-1 py-3.5 rounded-xl bg-emerald-500 text-zinc-950 font-bold text-xs flex items-center justify-center gap-1.5 shadow-[0_4px_16px_rgba(16,185,129,0.3)] active:scale-[0.98] transition-transform touch-manipulation"
+            >
+              <Play className="w-3.5 h-3.5 fill-current" />
+              Mulai Sesi Kosong
+            </Link>
+            <Link
+              href="/latihan"
+              className="px-4 py-3.5 rounded-xl bg-white/[0.06] border border-white/[0.1] text-zinc-200 font-semibold text-xs flex items-center gap-1 active:scale-[0.98] transition-transform touch-manipulation"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Program
+            </Link>
+          </div>
+        )}
       </div>
 
       {/* Daftar Program Aktif */}

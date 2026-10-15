@@ -10,16 +10,18 @@ export const metadata = {
 interface PageProps {
   searchParams: Promise<{
     programId?: string;
+    repeatSessionId?: string;
   }>;
 }
 
 export default async function WorkoutPage({ searchParams }: PageProps) {
   const resolvedParams = await searchParams;
   const programId = resolvedParams.programId;
+  const repeatSessionId = resolvedParams.repeatSessionId;
 
   let initialData;
   try {
-    initialData = await getWorkoutInitialDataAction(programId);
+    initialData = await getWorkoutInitialDataAction(programId, repeatSessionId);
   } catch {
     redirect('/login');
   }

@@ -25,10 +25,11 @@ async function requireUser() {
 export async function getHomeDataAction() {
   const user = await requireUser();
 
-  // Hanya 2 round-trip DB untuk seluruh halaman Home:
+  // Hanya 3 round-trip DB paralel untuk seluruh halaman Home:
   // 1. program + jumlah gerakan (tanpa nested exercise full row)
   // 2. jumlah gerakan di pustaka
-  const [programs, exerciseCount] = await Promise.all([
+  // 3. sesi terakhir yang selesai (untuk tombol "Ulangi Latihan Terakhir")
+  const [programs, exerciseCount, lastSession] = await Promise.all([
     prisma.program.findMany({
       where: { userId: user.id, isArchived: false },
       select: {
@@ -45,6 +46,11 @@ export async function getHomeDataAction() {
         OR: [{ userId: null }, { userId: user.id }],
       },
     }),
+    prisma.workoutSession.findFirst({
+      where: { userId: user.id, isCompleted: true },
+      orderBy: { startedAt: 'desc' },
+      select: { id: true, name: true, startedAt: true },
+    }),
   ]);
 
   return {
@@ -59,6 +65,7 @@ export async function getHomeDataAction() {
       sessionCount: p._count.sessions,
     })),
     exerciseCount,
+    lastSession,
   };
 }
 

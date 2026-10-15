@@ -30,7 +30,10 @@ export type ExerciseHistoryInfo = {
   } | null;
 };
 
-export async function getWorkoutInitialDataAction(programId?: string) {
+export async function getWorkoutInitialDataAction(
+  programId?: string,
+  repeatSessionId?: string
+) {
   const user = await requireUser();
 
   // Semua query dijalankan paralel sekaligus (1 kali round-trip jaringan, bukan berurutan)
@@ -58,7 +61,39 @@ export async function getWorkoutInitialDataAction(programId?: string) {
 
   // 3. Ambil data program terpilih jika ada
   let selectedProgram = null;
-  if (programId) {
+  if (repeatSessionId) {
+    // "Program sintetis" dari sesi terakhir: bentuk object ber-shape Program
+    // (program + ProgramExercise include exercise) agar mapping state di
+    // WorkoutRunner (createExercisesFromProgram) bekerja tanpa diubah.
+    const src = await prisma.workoutSession.findFirst({
+      where: { id: repeatSessionId, userId: user.id, isCompleted: true },
+      include: {
+        exercises: {
+          orderBy: { sortOrder: 'asc' },
+          include: { exercise: true, sets: { orderBy: { setNumber: 'asc' } } },
+        },
+      },
+    });
+    if (!src) throw new Error('Sesi yang ingin diulang tidak ditemukan.');
+
+    selectedProgram = {
+      id: null,
+      name: src.name,
+      exercises: src.exercises.map((se) => {
+        const workReps = se.sets.map((s) => s.reps).filter((r) => r > 0);
+        return {
+          id: se.id,
+          exerciseId: se.exerciseId,
+          targetSets: se.sets.filter((s) => s.setType !== SetType.WARMUP).length || 1,
+          targetRepMin: workReps.length ? Math.min(...workReps) : 8,
+          targetRepMax: workReps.length ? Math.max(...workReps) : 12,
+          restSeconds: se.restSeconds,
+          notes: se.notes,
+          exercise: se.exercise,
+        };
+      }),
+    };
+  } else if (programId) {
     selectedProgram = userPrograms.find((p) => p.id === programId) || null;
   }
 
