@@ -11,11 +11,39 @@ RUN npm ci
 
 # 3. Builder stage
 FROM base AS builder
+
+# PENTING: variabel NEXT_PUBLIC_* di-INLINE oleh Next.js saat BUILD, bukan dibaca saat runtime.
+# Karena .dockerignore mengecualikan .env (agar kredensial tidak masuk image), nilai-nilai ini
+# HARUS diberikan lewat build arg. Tanpa ini, bundle berisi nilai kosong dan setiap Server
+# Component yang memanggil createClient() gagal dengan "An error occurred in the Server
+# Components render" hanya di produksi.
+ARG NEXT_PUBLIC_SUPABASE_URL
+ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
+ARG NEXT_PUBLIC_SITE_URL
+
+ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
+ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
+ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
+
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npx prisma generate
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
+
+# Gagalkan build lebih awal dengan pesan jelas, daripada menghasilkan image yang
+# error-nya baru terlihat sebagai digest di browser.
+RUN node -e "\
+  const missing = ['NEXT_PUBLIC_SUPABASE_URL','NEXT_PUBLIC_SUPABASE_ANON_KEY']\
+    .filter((k) => !process.env[k] || process.env[k].length < 8);\
+  if (missing.length) {\
+    console.error('\n[BUILD GAGAL] Build arg berikut kosong: ' + missing.join(', '));\
+    console.error('Jalankan: docker compose build, atau');\
+    console.error('docker build --build-arg NEXT_PUBLIC_SUPABASE_URL=... --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=... .\n');\
+    process.exit(1);\
+  }\
+"
+
 RUN npm run build
 
 # 4. Production Runner stage
