@@ -13,11 +13,13 @@ import {
   Trash2,
   Check,
   Trophy,
+  Loader2,
 } from 'lucide-react';
 import { SetType } from '@prisma/client';
 import {
   deleteWorkoutSessionAction,
   updateWorkoutSessionAction,
+  updateSetLogAction,
 } from '@/app/actions/riwayat-actions';
 import { MUSCLE_TRANSLATIONS } from '@/lib/constants';
 
@@ -41,8 +43,39 @@ export function SessionDetailModal({
   const [editNotes, setEditNotes] = useState('');
   const [editDate, setEditDate] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [savingSetId, setSavingSetId] = useState<string | null>(null);
+  const [setError, setSetError] = useState<{ id: string; message: string } | null>(
+    null
+  );
 
   if (!isOpen || !session) return null;
+
+  const handleSetBlur = async (
+    setId: string,
+    field: 'weight' | 'reps',
+    defaultValue: number,
+    rawValue: string,
+    currentWeight: number,
+    currentReps: number
+  ) => {
+    const value = Number(rawValue);
+    if (Number.isNaN(value) || value === defaultValue) return;
+    if (savingSetId) return;
+
+    try {
+      setSavingSetId(setId);
+      setSetError(null);
+      await updateSetLogAction(setId, {
+        weight: field === 'weight' ? value : currentWeight,
+        reps: field === 'reps' ? value : currentReps,
+      });
+      onUpdated();
+    } catch (err: any) {
+      setSetError({ id: setId, message: err.message || 'Gagal menyimpan set.' });
+    } finally {
+      setSavingSetId(null);
+    }
+  };
 
   const startEdit = () => {
     setEditName(session.name);
@@ -257,29 +290,76 @@ export function SessionDetailModal({
                   {se.sets.map((set: any) => (
                     <div
                       key={set.id}
-                      className="py-1.5 flex items-center justify-between text-zinc-300"
+                      className={`py-1.5 flex flex-col ${
+                        savingSetId === set.id ? 'opacity-60' : ''
+                      }`}
                     >
-                      <div className="flex items-center gap-2">
-                        <span className="text-zinc-500 font-mono w-5">#{set.setNumber}</span>
-                        {getSetTypeBadge(set.setType)}
-                        <span className="font-semibold font-mono text-zinc-100">
-                          {set.weight} kg × {set.reps} reps
-                        </span>
-                      </div>
+                      <div className="flex items-center justify-between text-zinc-300">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-zinc-500 font-mono w-5">
+                            #{set.setNumber}
+                          </span>
+                          {getSetTypeBadge(set.setType)}
+                          <input
+                            type="number"
+                            inputMode="decimal"
+                            defaultValue={set.weight}
+                            disabled={savingSetId !== null}
+                            onBlur={(e) =>
+                              handleSetBlur(
+                                set.id,
+                                'weight',
+                                set.weight,
+                                e.target.value,
+                                set.weight,
+                                set.reps
+                              )
+                            }
+                            className="w-16 rounded-lg bg-white/[0.05] border border-white/[0.1] px-2 py-1 text-sm tabular-nums text-zinc-100"
+                          />
+                          <span className="text-zinc-400">kg ×</span>
+                          <input
+                            type="number"
+                            inputMode="decimal"
+                            defaultValue={set.reps}
+                            disabled={savingSetId !== null}
+                            onBlur={(e) =>
+                              handleSetBlur(
+                                set.id,
+                                'reps',
+                                set.reps,
+                                e.target.value,
+                                set.weight,
+                                set.reps
+                              )
+                            }
+                            className="w-16 rounded-lg bg-white/[0.05] border border-white/[0.1] px-2 py-1 text-sm tabular-nums text-zinc-100"
+                          />
+                          <span className="text-zinc-400">reps</span>
+                          {savingSetId === set.id && (
+                            <Loader2 className="w-3 h-3 animate-spin text-emerald-400" />
+                          )}
+                        </div>
 
-                      <div className="flex items-center gap-2">
-                        {set.estimated1RM > 0 && (
-                          <span className="text-[10px] text-zinc-500 font-mono">
-                            Est 1RM: {set.estimated1RM}kg
-                          </span>
-                        )}
-                        {set.isPersonalRecord && (
-                          <span className="flex items-center gap-1 text-[10px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded">
-                            <Trophy className="w-3 h-3 text-amber-400" />
-                            PR
-                          </span>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {set.estimated1RM > 0 && (
+                            <span className="text-[10px] text-zinc-500 font-mono">
+                              Est 1RM: {set.estimated1RM}kg
+                            </span>
+                          )}
+                          {set.isPersonalRecord && (
+                            <span className="flex items-center gap-1 text-[10px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded">
+                              <Trophy className="w-3 h-3 text-amber-400" />
+                              PR
+                            </span>
+                          )}
+                        </div>
                       </div>
+                      {setError && setError.id === set.id && (
+                        <p className="text-[10px] text-rose-400 mt-0.5">
+                          {setError.message}
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>

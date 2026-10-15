@@ -275,3 +275,51 @@ export async function createManualWorkoutSessionAction(input: ManualSessionInput
   revalidatePath('/');
   return { success: true, sessionId: session.id };
 }
+
+export async function updateSetLogAction(
+  setId: string,
+  data: { weight: number; reps: number }
+) {
+  const user = await requireUser();
+
+  const set = await prisma.setLog.findFirst({
+    where: { id: setId, userId: user.id },
+    include: { sessionExercise: { select: { workoutSessionId: true } } },
+  });
+  if (!set) {
+    throw new Error('Set tidak ditemukan.');
+  }
+
+  const weight = Number(data.weight) || 0;
+  const reps = Math.max(0, Math.round(Number(data.reps) || 0));
+  const estimated1RM =
+    reps > 0 && weight > 0 ? Math.round((weight * (1 + reps / 30)) * 10) / 10 : 0;
+
+  // Satu transaksi: update set + hitung ulang totalVolume sesi dari semua set selesai
+  // (definisi volume sama dengan saveWorkoutSessionAction; aggregate Prisma tak bisa mengalikan kolom).
+  // ponytail: isPersonalRecord sengaja tidak dihitung ulang — flag momen historis, keputusan plan.
+  await prisma.$transaction(async (tx) => {
+    await tx.setLog.update({
+      where: { id: setId },
+      data: { weight, reps, estimated1RM },
+    });
+
+    const sessionSets = await tx.setLog.findMany({
+      where: {
+        isCompleted: true,
+        sessionExercise: { workoutSessionId: set.sessionExercise.workoutSessionId },
+      },
+      select: { weight: true, reps: true },
+    });
+    const totalVolume = sessionSets.reduce((s, x) => s + x.weight * x.reps, 0);
+
+    await tx.workoutSession.update({
+      where: { id: set.sessionExercise.workoutSessionId },
+      data: { totalVolume },
+    });
+  });
+
+  revalidatePath('/riwayat');
+  revalidatePath('/');
+  return { success: true };
+}
