@@ -3,6 +3,7 @@ import {
   getProgramByIdAction,
   getExercisesAction,
 } from '@/app/actions/latihan-actions';
+import { getAuthenticatedUser } from '@/lib/supabase/server';
 import { ProgramDetailClient } from '@/components/latihan/program-detail-client';
 
 export const dynamic = 'force-dynamic';
@@ -15,9 +16,10 @@ export default async function ProgramDetailPage({
   const { id } = await params;
 
   try {
-    const [program, allExercises] = await Promise.all([
+    const [program, allExercises, user] = await Promise.all([
       getProgramByIdAction(id),
       getExercisesAction(false),
+      getAuthenticatedUser(),
     ]);
 
     return (
@@ -25,6 +27,7 @@ export default async function ProgramDetailPage({
         <ProgramDetailClient
           initialProgram={program}
           allExercises={allExercises}
+          userId={user?.id ?? ''}
         />
       </main>
     );

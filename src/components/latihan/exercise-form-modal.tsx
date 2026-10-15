@@ -2,13 +2,14 @@
 
 import { useState } from 'react';
 import { MuscleGroup, EquipmentType } from '@prisma/client';
-import { X, Loader2 } from 'lucide-react';
+import { X, Loader2, Dumbbell } from 'lucide-react';
 import {
   MUSCLE_LABELS,
   EQUIPMENT_LABELS,
   WEIGHT_INCREMENT_OPTIONS,
 } from '@/lib/constants';
 import { upsertExerciseAction } from '@/app/actions/latihan-actions';
+import { uploadExerciseImage } from '@/lib/storage';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface ExerciseFormInitialData {
@@ -22,6 +23,7 @@ interface ExerciseFormInitialData {
   tips: string[];
   commonMistakes: string[];
   videoUrl?: string | null;
+  imageUrl?: string | null;
   alternatives: string[];
 }
 
@@ -31,6 +33,7 @@ interface ExerciseFormModalProps {
   initialData?: ExerciseFormInitialData | null;
   attachToProgramId?: string;
   onSuccessCreated?: (exerciseId: string) => void;
+  userId: string;
 }
 
 export function ExerciseFormModal({
@@ -39,6 +42,7 @@ export function ExerciseFormModal({
   initialData,
   attachToProgramId,
   onSuccessCreated,
+  userId,
 }: ExerciseFormModalProps) {
   const queryClient = useQueryClient();
 
@@ -69,6 +73,8 @@ export function ExerciseFormModal({
     initialData?.alternatives?.join('\n') ?? ''
   );
   const [videoUrl, setVideoUrl] = useState(initialData?.videoUrl ?? '');
+  const [imageUrl, setImageUrl] = useState(initialData?.imageUrl ?? '');
+  const [uploading, setUploading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const mutation = useMutation({
@@ -92,6 +98,7 @@ export function ExerciseFormModal({
           commonMistakes: parseLines(mistakesText),
           alternatives: parseLines(alternativesText),
           videoUrl: videoUrl.trim(),
+          imageUrl: imageUrl.trim(),
         },
         attachToProgramId
       );
@@ -317,6 +324,69 @@ export function ExerciseFormModal({
               placeholder="Contoh: Seated Cable Row"
               className="w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-zinc-100 focus:outline-none focus:border-emerald-500"
             />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+              Foto Gerakan (opsional)
+            </label>
+            <div className="flex items-center gap-3">
+              {imageUrl ? (
+                <img
+                  src={imageUrl}
+                  alt="Foto gerakan"
+                  className="w-14 h-[72px] object-contain rounded-xl bg-zinc-950 border border-zinc-800"
+                />
+              ) : (
+                <div className="w-14 h-[72px] rounded-xl bg-zinc-950 border border-dashed border-zinc-700 flex items-center justify-center">
+                  <Dumbbell className="w-5 h-5 text-zinc-600" />
+                </div>
+              )}
+              <div className="flex-1 space-y-1.5">
+                <label className="block">
+                  <span className="inline-block px-3 py-2 rounded-lg bg-zinc-800 text-zinc-200 text-xs font-semibold cursor-pointer hover:bg-zinc-700">
+                    {uploading ? 'Mengunggah...' : 'Pilih Foto'}
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    disabled={uploading || mutation.isPending}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      e.target.value = ''; // reset supaya file sama bisa dipilih ulang
+                      if (!file) return;
+                      setErrorMsg(null);
+                      setUploading(true);
+                      try {
+                        if (!userId)
+                          throw new Error(
+                            'Sesi tidak ditemukan, coba muat ulang halaman.'
+                          );
+                        const url = await uploadExerciseImage(file, userId);
+                        setImageUrl(url);
+                      } catch (err) {
+                        setErrorMsg(
+                          err instanceof Error ? err.message : 'Upload gagal.'
+                        );
+                      } finally {
+                        setUploading(false);
+                      }
+                    }}
+                  />
+                </label>
+                <p className="text-[10px] text-zinc-500">JPG/PNG/WebP, maks 2 MB.</p>
+                {imageUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setImageUrl('')}
+                    className="text-[11px] text-rose-400 hover:text-rose-300"
+                  >
+                    Hapus foto
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
 
           <div>

@@ -201,9 +201,11 @@ function SortableProgramCard({
 export function LatihanTabsClient({
   initialPrograms,
   initialExercises,
+  userId,
 }: {
   initialPrograms: ProgramListType;
   initialExercises: ExerciseListType;
+  userId: string;
 }) {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'programs' | 'exercises'>(
@@ -688,6 +690,7 @@ export function LatihanTabsClient({
       <ExerciseFormModal
         isOpen={isExerciseModalOpen}
         onClose={() => setIsExerciseModalOpen(false)}
+        userId={userId}
       />
     </div>
   );

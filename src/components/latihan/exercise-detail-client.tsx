@@ -26,9 +26,11 @@ type ExerciseDetailType = Awaited<ReturnType<typeof getExerciseByIdAction>>;
 export function ExerciseDetailClient({
   initialExercise,
   progress = [],
+  userId = '',
 }: {
   initialExercise: ExerciseDetailType;
   progress?: ProgressPoint[];
+  userId?: string;
 }) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -210,6 +212,7 @@ export function ExerciseDetailClient({
         isOpen={isEditOpen}
         onClose={() => setIsEditOpen(false)}
         initialData={exercise}
+        userId={userId}
         onSuccessCreated={(newId) => {
           if (newId !== exercise.id) {
             router.push(`/latihan/gerakan/${newId}`);

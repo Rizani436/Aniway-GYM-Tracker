@@ -73,6 +73,13 @@ export const exerciseSchema = z.object({
     .url('URL video tidak valid')
     .optional()
     .or(z.literal('')),
+  imageUrl: z
+    .string()
+    .trim()
+    .url('URL gambar tidak valid')
+    .optional()
+    .nullable()
+    .or(z.literal('')),
   alternatives: z.array(z.string().trim().min(1)).default([]),
 });
 

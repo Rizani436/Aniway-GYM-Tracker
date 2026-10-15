@@ -444,6 +444,7 @@ export async function upsertExerciseAction(
     tips: parsed.data.tips,
     commonMistakes: parsed.data.commonMistakes,
     videoUrl: parsed.data.videoUrl || null,
+    imageUrl: parsed.data.imageUrl || null,
     alternatives: parsed.data.alternatives,
   };
 

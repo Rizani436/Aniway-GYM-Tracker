@@ -2,14 +2,16 @@ import {
   getProgramsAction,
   getExercisesAction,
 } from '@/app/actions/latihan-actions';
+import { getAuthenticatedUser } from '@/lib/supabase/server';
 import { LatihanTabsClient } from '@/components/latihan/latihan-tabs-client';
 
 export const dynamic = 'force-dynamic';
 
 export default async function LatihanPage() {
-  const [programs, exercises] = await Promise.all([
+  const [programs, exercises, user] = await Promise.all([
     getProgramsAction(true),
     getExercisesAction(false),
+    getAuthenticatedUser(),
   ]);
 
   return (
@@ -17,6 +19,7 @@ export default async function LatihanPage() {
       <LatihanTabsClient
         initialPrograms={programs}
         initialExercises={exercises}
+        userId={user?.id ?? ''}
       />
     </main>
   );

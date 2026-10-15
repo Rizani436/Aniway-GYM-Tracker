@@ -252,9 +252,11 @@ function SortableProgramExerciseItem({
 export function ProgramDetailClient({
   initialProgram,
   allExercises,
+  userId = '',
 }: {
   initialProgram: ProgramDetailType;
   allExercises: AllExercisesType;
+  userId?: string;
 }) {
   const queryClient = useQueryClient();
   const [isPickerOpen, setIsPickerOpen] = useState(false);
@@ -540,6 +542,7 @@ export function ProgramDetailClient({
         isOpen={isNewExerciseModalOpen}
         onClose={() => setIsNewExerciseModalOpen(false)}
         attachToProgramId={program.id}
+        userId={userId}
       />
     </div>
   );
