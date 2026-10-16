@@ -28,6 +28,7 @@ export type ExerciseHistoryInfo = {
     suggestedWeightIncrement: number;
     reason: string;
   } | null;
+  avgSets: Array<{ weight: number; reps: number } | null>;
 };
 
 export async function getWorkoutInitialDataAction(
@@ -139,7 +140,7 @@ async function getExerciseHistoryForUser(
   exerciseId: string,
   targetRepMax?: number
 ): Promise<ExerciseHistoryInfo> {
-  const [lastSessionExercise, best1RMAgg] = await Promise.all([
+  const [lastSessionExercise, best1RMAgg, recentSessions] = await Promise.all([
     prisma.sessionExercise.findFirst({
       where: {
         userId,
@@ -164,6 +165,22 @@ async function getExerciseHistoryForUser(
       },
       _max: { estimated1RM: true },
     }),
+    // 3 sesi terakhir untuk rata-rata beban/reps per posisi set
+    prisma.sessionExercise.findMany({
+      where: {
+        userId,
+        exerciseId,
+        workoutSession: { isCompleted: true },
+      },
+      orderBy: { performedAt: 'desc' },
+      take: 3,
+      include: {
+        sets: {
+          where: { isCompleted: true, setType: { not: SetType.WARMUP } },
+          orderBy: { setNumber: 'asc' },
+        },
+      },
+    }),
   ]);
 
   const best1RM = best1RMAgg._max.estimated1RM || 0;
@@ -174,6 +191,7 @@ async function getExerciseHistoryForUser(
       previousSets: [],
       best1RM,
       progressiveOverloadSuggestion: null,
+      avgSets: [],
     };
   }
 
@@ -208,11 +226,30 @@ async function getExerciseHistoryForUser(
     }
   }
 
+  // Rata-rata per posisi set dari 3 sesi terakhir (set kerja selesai saja).
+  // Dipakai chip "Rata 62.5×9" sebagai referensi tambahan di runner.
+  const avgSets = recentSessions.length
+    ? Array.from(
+        { length: Math.max(...recentSessions.map((se) => se.sets.length)) },
+        (_, i) => {
+          const atPos = recentSessions
+            .map((se) => se.sets[i])
+            .filter((s): s is NonNullable<typeof s> => !!s && s.reps > 0);
+          if (!atPos.length) return null;
+          return {
+            weight: Math.round((atPos.reduce((a, s) => a + s.weight, 0) / atPos.length) * 10) / 10,
+            reps: Math.round(atPos.reduce((a, s) => a + s.reps, 0) / atPos.length),
+          };
+        }
+      )
+    : [];
+
   return {
     lastSessionDate: lastSessionExercise.performedAt,
     previousSets,
     best1RM,
     progressiveOverloadSuggestion,
+    avgSets,
   };
 }
 

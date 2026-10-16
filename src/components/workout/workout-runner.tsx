@@ -151,6 +151,7 @@ export function WorkoutRunner({
                 reps: prevSet.reps,
               }
             : null,
+          avgRecord: hist?.avgSets?.[s] ?? null,
         });
       }
 
@@ -333,6 +334,7 @@ export function WorkoutRunner({
         setType: SetType.NORMAL,
         isCompleted: false,
         previousRecord: null,
+        avgRecord: targetEx.sets[targetEx.sets.length - 1]?.avgRecord ?? null,
       };
 
       targetEx.sets = [...targetEx.sets, newSet];
@@ -393,6 +395,7 @@ export function WorkoutRunner({
             setType: prevSet?.setType || SetType.NORMAL,
             isCompleted: false,
             previousRecord: prevSet ? { weight: prevSet.weight, reps: prevSet.reps } : null,
+            avgRecord: history?.avgSets?.[idx] ?? null,
           };
         });
 
@@ -425,6 +428,7 @@ export function WorkoutRunner({
           setType: prevSet?.setType || SetType.NORMAL,
           isCompleted: false,
           previousRecord: prevSet ? { weight: prevSet.weight, reps: prevSet.reps } : null,
+          avgRecord: history?.avgSets?.[s] ?? null,
         });
       }
 

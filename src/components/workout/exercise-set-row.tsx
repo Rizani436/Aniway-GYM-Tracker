@@ -2,7 +2,7 @@
 
 import { memo, useState } from 'react';
 import { SetType } from '@prisma/client';
-import { Check, Trash2, Plus, Minus, History } from 'lucide-react';
+import { Check, Trash2, Plus, Minus, History, Sigma } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const RPE_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -37,6 +37,8 @@ export interface SetRowData {
     weight: number;
     reps: number;
   } | null;
+  /** Rata-rata beban×reps posisi set ini dari 3 sesi terakhir (null = tak ada) */
+  avgRecord?: { weight: number; reps: number } | null;
 }
 
 interface ExerciseSetRowProps {
@@ -239,6 +241,19 @@ export const ExerciseSetRow = memo(function ExerciseSetRow({
           >
             <History className="w-3 h-3 text-zinc-500 shrink-0" />
             {set.previousRecord.weight}×{set.previousRecord.reps}
+          </button>
+        )}
+
+        {/* Rata-rata 3 sesi terakhir (posisi set sama) — tap untuk isi */}
+        {set.avgRecord && (
+          <button
+            type="button"
+            onClick={() => onChange({ weight: set.avgRecord!.weight, reps: set.avgRecord!.reps })}
+            className="inline-flex items-center gap-1 text-[10px] font-mono font-semibold text-sky-300/80 tabular-nums active:text-sky-200 transition-colors touch-manipulation"
+            title="Rata-rata 3 sesi terakhir — tap untuk isi beban & repetisi"
+          >
+            <Sigma className="w-3 h-3 text-sky-400/60 shrink-0" />
+            Rata {set.avgRecord.weight}×{set.avgRecord.reps}
           </button>
         )}
 
