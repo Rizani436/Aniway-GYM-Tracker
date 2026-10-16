@@ -8,13 +8,22 @@ import { cn } from '@/lib/utils';
 const RPE_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 /**
- * Layout baris set = GRID 4 kolom yang sama persis dengan header tabel di
+ * Layout baris set = GRID yang sama persis dengan header tabel di
  * workout-runner (`Set · Beban · Reps · ✓`), sehingga header mustahil tidak
  * sejajar. RPE, "Lalu", dan tombol hapus turun ke baris meta di bawahnya —
  * itu memberi input beban/reps lebar penuh untuk angka seperti `102.5` dan
  * menjauhkan tombol hapus dari tombol centang (rawan salah tekan).
+ *
+ * Layar sempit: 4 kolom + 4 tombol stepper itu ~340px kebutuhan minimum, dan
+ * input beban menyisakan <40px (angka seperti `102.5` butuh ~40px) — terukur
+ * di browser pada 375px hanya tersisa 39px. Karena itu:
+ *   <380px → tombol stepper dikecilkan w-7→w-6 (target sentuh tetap 24×36px,
+ *            area tap vertikal tidak berubah) sehingga input lapang lagi;
+ *   <340px → grid turun ke 3 kolom, field Reps pindah baris kedua.
+ * Ukuran font input TIDAK dikecilkan di tier mana pun.
  */
-const ROW_GRID = 'grid grid-cols-[32px_1fr_1fr_36px] gap-1.5 items-center';
+const ROW_GRID =
+  'grid grid-cols-[32px_1fr_1fr_36px] max-[340px]:grid-cols-[32px_1fr_36px] gap-1.5 items-center';
 
 export interface SetRowData {
   id: string;
@@ -134,7 +143,7 @@ export const ExerciseSetRow = memo(function ExerciseSetRow({
         <button
           type="button"
           onClick={() => stepWeight(-1)}
-          className="w-7 h-9 rounded-lg bg-white/[0.05] text-zinc-300 flex items-center justify-center active:scale-90 active:bg-white/[0.12] shrink-0 transition-transform touch-manipulation"
+          className="w-7 max-[380px]:w-6 h-9 rounded-lg bg-white/[0.05] text-zinc-300 flex items-center justify-center active:scale-90 active:bg-white/[0.12] shrink-0 transition-transform touch-manipulation"
           aria-label="Kurangi beban"
         >
           <Minus className="w-3.5 h-3.5" />
@@ -156,20 +165,26 @@ export const ExerciseSetRow = memo(function ExerciseSetRow({
         <button
           type="button"
           onClick={() => stepWeight(1)}
-          className="w-7 h-9 rounded-lg bg-white/[0.05] text-zinc-300 flex items-center justify-center active:scale-90 active:bg-white/[0.12] shrink-0 transition-transform touch-manipulation"
+          className="w-7 max-[380px]:w-6 h-9 rounded-lg bg-white/[0.05] text-zinc-300 flex items-center justify-center active:scale-90 active:bg-white/[0.12] shrink-0 transition-transform touch-manipulation"
           aria-label="Tambah beban"
         >
           <Plus className="w-3.5 h-3.5" />
         </button>
       </div>
 
-      {/* Repetisi (Reps) + Quick Steppers */}
-      <div className="flex items-center gap-0.5 min-w-0">
+      {/* Repetisi (Reps) + Quick Steppers — di layar <340px turun ke baris 2 */}
+      <div className="flex items-center gap-0.5 min-w-0 max-[340px]:col-start-2 max-[340px]:col-end-4 max-[340px]:row-start-2">
+        <span
+          className="hidden max-[340px]:block text-[9px] font-bold uppercase tracking-wider text-zinc-500 shrink-0 pr-0.5"
+          aria-hidden="true"
+        >
+          Reps
+        </span>
         <button
           type="button"
           onClick={() => stepReps(-1)}
-          className="w-7 h-9 rounded-lg bg-white/[0.05] text-zinc-300 flex items-center justify-center active:scale-90 active:bg-white/[0.12] shrink-0 transition-transform touch-manipulation"
-          aria-label="Kurangi repetisi"
+          className="w-7 max-[380px]:w-6 h-9 rounded-lg bg-white/[0.05] text-zinc-300 flex items-center justify-center active:scale-90 active:bg-white/[0.12] shrink-0 transition-transform touch-manipulation"
+          aria-label={`Kurangi repetisi set ${index + 1}`}
         >
           <Minus className="w-3.5 h-3.5" />
         </button>
@@ -190,19 +205,19 @@ export const ExerciseSetRow = memo(function ExerciseSetRow({
         <button
           type="button"
           onClick={() => stepReps(1)}
-          className="w-7 h-9 rounded-lg bg-white/[0.05] text-zinc-300 flex items-center justify-center active:scale-90 active:bg-white/[0.12] shrink-0 transition-transform touch-manipulation"
+          className="w-7 max-[380px]:w-6 h-9 rounded-lg bg-white/[0.05] text-zinc-300 flex items-center justify-center active:scale-90 active:bg-white/[0.12] shrink-0 transition-transform touch-manipulation"
           aria-label="Tambah repetisi"
         >
           <Plus className="w-3.5 h-3.5" />
         </button>
       </div>
 
-      {/* Tombol Centang Selesai — glow saat aktif */}
+      {/* Tombol Centang Selesai — di layar <340px tetap di kanan baris 1 */}
       <button
         type="button"
         onClick={onToggleComplete}
         className={cn(
-          'w-9 h-9 rounded-lg flex items-center justify-center transition-all active:scale-90 touch-manipulation',
+          'w-9 h-9 rounded-lg flex items-center justify-center transition-all active:scale-90 touch-manipulation max-[340px]:col-start-3 max-[340px]:row-start-1',
           set.isCompleted
             ? 'bg-emerald-400 text-zinc-950 shadow-[0_0_14px_rgba(52,211,153,0.55)]'
             : 'bg-white/[0.06] text-zinc-400'

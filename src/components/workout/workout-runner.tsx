@@ -729,11 +729,12 @@ export function WorkoutRunner({
                 </div>
               )}
 
-              {/* Sets Table Header — grid identik dengan ExerciseSetRow (kolom mustahil tidak sejajar) */}
-              <div className="grid grid-cols-[32px_1fr_1fr_36px] gap-1.5 items-center px-1.5 text-[9px] font-bold uppercase tracking-wider text-zinc-500">
+              {/* Sets Table Header — grid identik dengan ExerciseSetRow (kolom mustahil tidak sejajar).
+                  Di <340px grid turun ke 3 kolom & label Reps disembunyikan (field Reps ada di baris 2). */}
+              <div className="grid grid-cols-[32px_1fr_1fr_36px] max-[340px]:grid-cols-[32px_1fr_36px] gap-1.5 items-center px-1.5 text-[9px] font-bold uppercase tracking-wider text-zinc-500">
                 <span className="text-center">Set</span>
                 <span className="text-center">Beban</span>
-                <span className="text-center">Reps</span>
+                <span className="text-center max-[340px]:hidden">Reps</span>
                 <span className="text-center" aria-label="Selesai">
                   ✓
                 </span>
