@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { SetType } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/supabase/server';
 import {
@@ -163,6 +164,70 @@ export async function upsertProgramAction(input: ProgramInput) {
     revalidatePath('/');
     return created;
   }
+}
+
+export async function saveSessionAsProgramAction(input: {
+  sessionId: string;
+  name: string;
+  description?: string;
+  color: string;
+}) {
+  const user = await requireUser();
+  const parsed = programSchema.safeParse({
+    name: input.name,
+    description: input.description,
+    color: input.color,
+  });
+  if (!parsed.success) throw new Error(parsed.error.issues[0].message);
+
+  const session = await prisma.workoutSession.findFirst({
+    where: { id: input.sessionId, userId: user.id, isCompleted: true },
+    include: {
+      exercises: {
+        orderBy: { sortOrder: 'asc' },
+        include: { sets: { orderBy: { setNumber: 'asc' } } },
+      },
+    },
+  });
+  if (!session) throw new Error('Sesi tidak ditemukan.');
+  if (session.exercises.length === 0) throw new Error('Sesi tidak punya gerakan.');
+
+  const lastProgram = await prisma.program.findFirst({
+    where: { userId: user.id },
+    orderBy: { sortOrder: 'desc' },
+  });
+
+  // Derivasi target = aturan fitur "ulangi sesi" (workout-actions.ts:82-94):
+  // targetSets = jumlah set non-WARMUP; repMin/Max = rentang reps set kerja.
+  const created = await prisma.program.create({
+    data: {
+      userId: user.id,
+      name: parsed.data.name,
+      description: parsed.data.description || null,
+      color: parsed.data.color,
+      sortOrder: (lastProgram?.sortOrder ?? -1) + 1,
+      exercises: {
+        create: session.exercises.map((se, idx) => {
+          const workSets = se.sets.filter((s) => s.setType !== SetType.WARMUP);
+          const workReps = workSets.filter((s) => s.reps > 0).map((s) => s.reps);
+          return {
+            exerciseId: se.exerciseId,
+            sortOrder: idx,
+            targetSets: workSets.length || 1,
+            targetRepMin: workReps.length ? Math.min(...workReps) : 8,
+            targetRepMax: workReps.length ? Math.max(...workReps) : 12,
+            restSeconds: se.restSeconds || 90,
+            notes: se.notes,
+          };
+        }),
+      },
+    },
+    include: { exercises: true },
+  });
+
+  revalidatePath('/latihan');
+  revalidatePath('/');
+  return { programId: created.id, exerciseCount: created.exercises.length };
 }
 
 export async function toggleArchiveProgramAction(programId: string) {
