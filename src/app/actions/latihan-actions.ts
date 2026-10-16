@@ -26,11 +26,13 @@ async function requireUser() {
 export async function getHomeDataAction() {
   const user = await requireUser();
 
-  // Hanya 3 round-trip DB paralel untuk seluruh halaman Home:
+  // Hanya 4 round-trip DB paralel untuk seluruh halaman Home:
   // 1. program + jumlah gerakan (tanpa nested exercise full row)
   // 2. jumlah gerakan di pustaka
   // 3. sesi terakhir yang selesai (untuk tombol "Ulangi Latihan Terakhir")
-  const [programs, exerciseCount, lastSession] = await Promise.all([
+  // 4. sesi selesai 14 hari terakhir (untuk rekap mingguan)
+  const tanggal14HariLalu = new Date(Date.now() - 14 * 24 * 3600 * 1000);
+  const [programs, exerciseCount, lastSession, recentSessions] = await Promise.all([
     prisma.program.findMany({
       where: { userId: user.id, isArchived: false },
       select: {
@@ -52,7 +54,31 @@ export async function getHomeDataAction() {
       orderBy: { startedAt: 'desc' },
       select: { id: true, name: true, startedAt: true },
     }),
+    prisma.workoutSession.findMany({
+      where: { userId: user.id, isCompleted: true, startedAt: { gte: tanggal14HariLalu } },
+      select: { startedAt: true, totalVolume: true },
+    }),
   ]);
+
+  // Agregasi rekap mingguan: minggu ini = 7 hari terakhir, minggu lalu = 7 hari sebelumnya.
+  const weekRecap = (() => {
+    const now = Date.now();
+    const batas7Hari = now - 7 * 24 * 3600 * 1000;
+    const weeks = { thisWeek: { sessions: 0, volume: 0 }, lastWeek: { sessions: 0, volume: 0 } };
+    for (const s of recentSessions) {
+      const t = s.startedAt.getTime();
+      if (t >= batas7Hari) {
+        weeks.thisWeek.sessions += 1;
+        weeks.thisWeek.volume += s.totalVolume;
+      } else {
+        weeks.lastWeek.sessions += 1;
+        weeks.lastWeek.volume += s.totalVolume;
+      }
+    }
+    weeks.thisWeek.volume = Math.round(weeks.thisWeek.volume);
+    weeks.lastWeek.volume = Math.round(weeks.lastWeek.volume);
+    return weeks;
+  })();
 
   return {
     user: {
@@ -67,6 +93,7 @@ export async function getHomeDataAction() {
     })),
     exerciseCount,
     lastSession,
+    weekRecap,
   };
 }
 

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { signOutAction } from '@/app/login/actions';
-import { Dumbbell, Layers, Play, Plus, LogOut, ChevronRight, Zap, Repeat } from 'lucide-react';
+import { Dumbbell, Layers, Play, Plus, LogOut, ChevronRight, Zap, Repeat, TrendingUp } from 'lucide-react';
 import { useHomeData, type HomeData } from '@/hooks/use-home-data';
 
 type HomeUser = { name?: string | null } | null;
@@ -10,7 +10,13 @@ type HomeUser = { name?: string | null } | null;
 export function HomeClient({ data, user }: { data: HomeData; user: HomeUser }) {
   // initialData dari server → first paint identik; revisit hit cache lokal.
   const { data: home } = useHomeData(data);
-  const { programs, exerciseCount, lastSession } = home;
+  const { programs, exerciseCount, lastSession, weekRecap } = home;
+
+  const { thisWeek, lastWeek } = weekRecap;
+  const volumeDelta =
+    thisWeek.sessions === 0 || lastWeek.sessions === 0
+      ? null
+      : Math.round(((thisWeek.volume - lastWeek.volume) / lastWeek.volume) * 100);
 
   return (
     <main className="min-h-screen bg-[#08090a] text-[#f7f8f8] pb-28 max-w-md mx-auto px-4 pt-[max(1.5rem,env(safe-area-inset-top))] space-y-5">
@@ -71,6 +77,36 @@ export function HomeClient({ data, user }: { data: HomeData; user: HomeUser }) {
           </div>
         </Link>
       </div>
+
+      {/* Rekap Mingguan */}
+      {thisWeek.sessions > 0 && (
+        <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.07] flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
+              <TrendingUp className="w-5 h-5" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-bold tracking-tight text-white leading-none tabular-nums">
+                {thisWeek.sessions} sesi · {thisWeek.volume.toLocaleString('id-ID')} kg
+              </p>
+              <p className="text-[11px] text-zinc-400 font-medium mt-1">Volume 7 hari terakhir</p>
+            </div>
+          </div>
+          {lastWeek.sessions === 0 ? (
+            <span className="px-2 py-1 rounded-lg bg-white/[0.05] text-[10px] font-semibold text-zinc-400 shrink-0">
+              minggu pertama
+            </span>
+          ) : volumeDelta !== null && volumeDelta >= 0 ? (
+            <span className="px-2 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-semibold text-emerald-400 tabular-nums shrink-0">
+              ▲{volumeDelta}%
+            </span>
+          ) : (
+            <span className="px-2 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[10px] font-semibold text-amber-400 tabular-nums shrink-0">
+              ▼{Math.abs(volumeDelta ?? 0)}%
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Mulai Sesi Cepat Hero Card */}
       <div className="relative overflow-hidden p-5 rounded-3xl bg-gradient-to-b from-[#131715] to-[#0c0e0d] border border-emerald-500/25 shadow-[0_12px_40px_rgba(16,185,129,0.08)] space-y-3.5">
