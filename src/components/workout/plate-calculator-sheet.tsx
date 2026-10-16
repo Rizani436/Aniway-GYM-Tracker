@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { Calculator, X } from 'lucide-react';
 import { calculatePlates } from '@/lib/plate-calculator';
+import { cn } from '@/lib/utils';
 
 const BAR_WEIGHT = 20;
 
@@ -11,7 +12,7 @@ const BAR_WEIGHT = 20;
  * cukup render <PlateCalculatorSheet /> di header runner.
  * ponytail: bar fix 20 kg (barbell Olympic standar gym), tambah prop barWeight bila perlu.
  */
-export function PlateCalculatorSheet() {
+export function PlateCalculatorSheet({ className }: { className?: string } = {}) {
   const [isOpen, setIsOpen] = useState(false);
   const [weight, setWeight] = useState('');
 
@@ -38,7 +39,10 @@ export function PlateCalculatorSheet() {
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-zinc-300 active:scale-90 transition-transform shrink-0 touch-manipulation"
+        className={cn(
+          'w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-zinc-300 active:scale-90 transition-transform shrink-0 touch-manipulation',
+          className
+        )}
         aria-label="Kalkulator plat barbell"
         title="Kalkulator plat barbell"
       >

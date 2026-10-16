@@ -548,9 +548,9 @@ export function WorkoutRunner({
         </div>
       )}
 
-      {/* Top Header / Sticky Bar */}
+      {/* Top Header / Sticky Bar — 2 baris: judul utuh di atas, meta di bawah */}
       <div className="sticky top-0 z-30 bg-[#08090a]/95 backdrop-blur-xl border-b border-white/[0.08] -mx-4 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 mb-4">
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
           <Link
             href="/"
             className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-zinc-300 active:scale-90 transition-transform shrink-0 touch-manipulation"
@@ -559,27 +559,15 @@ export function WorkoutRunner({
             <ArrowLeft className="w-5 h-5" />
           </Link>
 
-          {/* Session Title Input */}
-          <div className="flex-1 min-w-0">
-            <input
-              type="text"
-              value={sessionName}
-              onChange={(e) => setSessionName(e.target.value)}
-              className="w-full bg-transparent font-extrabold text-white text-base focus:outline-none truncate"
-              placeholder="Nama Sesi Latihan..."
-            />
-            <div className="flex items-center gap-3 text-xs text-zinc-400 mt-0.5">
-              <span className="flex items-center gap-1 font-mono text-emerald-400 font-bold tabular-nums">
-                <Timer className="w-3.5 h-3.5" />
-                {formatTimer(elapsedSeconds)}
-              </span>
-              <span>•</span>
-              <span className="font-mono text-zinc-300 tabular-nums">{liveVolume.toLocaleString('id-ID')} kg</span>
-            </div>
-          </div>
-
-          {/* Kalkulator Plat */}
-          <PlateCalculatorSheet />
+          {/* Session Title Input — baris penuh agar nama sesi tidak terpotong */}
+          <input
+            type="text"
+            value={sessionName}
+            onChange={(e) => setSessionName(e.target.value)}
+            className="flex-1 min-w-0 bg-transparent font-extrabold text-white text-base focus:outline-none truncate"
+            placeholder="Nama Sesi Latihan..."
+            aria-label="Nama sesi latihan"
+          />
 
           {/* Tombol Selesai */}
           <button
@@ -591,6 +579,19 @@ export function WorkoutRunner({
             <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
             <span>{isSaving ? 'Menyimpan...' : 'Selesai'}</span>
           </button>
+        </div>
+
+        {/* Baris meta: timer · volume live · kalkulator plat */}
+        <div className="flex items-center gap-3 text-xs text-zinc-400 mt-1.5 pl-[3rem]">
+          <span className="flex items-center gap-1 font-mono text-emerald-400 font-bold tabular-nums">
+            <Timer className="w-3.5 h-3.5" />
+            {formatTimer(elapsedSeconds)}
+          </span>
+          <span aria-hidden="true">•</span>
+          <span className="font-mono text-zinc-300 tabular-nums">
+            {liveVolume.toLocaleString('id-ID')} kg
+          </span>
+          <PlateCalculatorSheet className="ml-auto w-9 h-9 rounded-lg bg-transparent border-transparent text-zinc-400" />
         </div>
       </div>
 
@@ -647,7 +648,7 @@ export function WorkoutRunner({
                         loading="lazy"
                         className="w-full h-full object-contain"
                       />
-                      <span className="absolute bottom-0 inset-x-0 bg-black/55 text-[8px] text-zinc-300 text-center py-0.5">
+                      <span className="absolute bottom-0 inset-x-0 bg-black/70 text-[9px] font-semibold text-zinc-200 text-center py-0.5 tracking-wide">
                         {expandedImageIdx === exIndex ? 'Tutup' : 'Cara'}
                       </span>
                     </button>
@@ -656,14 +657,14 @@ export function WorkoutRunner({
                   <div className="flex items-center gap-2">
                     <h3 className="font-bold text-white text-sm">{ex.name}</h3>
                   </div>
-                  <div className="flex items-center gap-1.5 mt-1 text-[11px] text-zinc-400">
+                  <div className="flex items-center gap-1.5 mt-1 flex-wrap text-[11px] text-zinc-400">
                     <span className="text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 font-medium">
                       {MUSCLE_TRANSLATIONS[ex.primaryMuscle]}
                     </span>
-                    <span>•</span>
+                    <span aria-hidden="true">•</span>
                     <span>{EQUIPMENT_TRANSLATIONS[ex.equipment]}</span>
-                    <span>•</span>
-                    <span className="font-mono">±{ex.weightIncrement}kg</span>
+                    <span aria-hidden="true">•</span>
+                    <span className="font-mono whitespace-nowrap">±{ex.weightIncrement}kg</span>
                   </div>
                   </div>
                 </div>
@@ -728,14 +729,14 @@ export function WorkoutRunner({
                 </div>
               )}
 
-              {/* Sets Table Header */}
-              <div className="flex items-center gap-1 px-1.5 text-[9px] font-bold uppercase tracking-wider text-zinc-500">
-                <span className="w-8 text-center shrink-0">Set</span>
-                <span className="w-12 text-center shrink-0 hidden sm:block">Lalu</span>
-                <span className="flex-1 text-center">Beban</span>
-                <span className="flex-1 text-center">Reps</span>
-                <span className="w-9 text-center shrink-0">✓</span>
-                <span className="w-7 shrink-0" />
+              {/* Sets Table Header — grid identik dengan ExerciseSetRow (kolom mustahil tidak sejajar) */}
+              <div className="grid grid-cols-[32px_1fr_1fr_36px] gap-1.5 items-center px-1.5 text-[9px] font-bold uppercase tracking-wider text-zinc-500">
+                <span className="text-center">Set</span>
+                <span className="text-center">Beban</span>
+                <span className="text-center">Reps</span>
+                <span className="text-center" aria-label="Selesai">
+                  ✓
+                </span>
               </div>
 
               {/* Set Rows */}
@@ -746,6 +747,8 @@ export function WorkoutRunner({
                     set={set}
                     index={sIndex}
                     weightIncrement={ex.weightIncrement}
+                    // Set aktif = set pertama yang belum dicentang
+                    isActive={!set.isCompleted && !ex.sets.slice(0, sIndex).some((s) => !s.isCompleted)}
                     onChange={(updated) => handleUpdateSet(exIndex, sIndex, updated)}
                     onToggleComplete={() => handleToggleComplete(exIndex, sIndex)}
                     onDelete={() => handleDeleteSet(exIndex, sIndex)}
