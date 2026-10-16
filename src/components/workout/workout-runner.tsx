@@ -25,7 +25,7 @@ import { ExerciseSetRow, type SetRowData } from './exercise-set-row';
 import { PlateCalculatorSheet } from './plate-calculator-sheet';
 import { WorkoutTimerBar } from './workout-timer-bar';
 import { AddExerciseModal, type ExerciseItem } from './add-exercise-modal';
-import { WorkoutSummaryModal } from './workout-summary-modal';
+import { WorkoutSummaryModal, type ExerciseTargetStat } from './workout-summary-modal';
 import {
   saveWorkoutSessionAction,
   getExerciseHistoryAction,
@@ -45,6 +45,7 @@ interface WorkoutExerciseState {
   restSeconds: number;
   targetRepMin?: number;
   targetRepMax?: number;
+  targetSets?: number;
   notes?: string;
   historyInfo?: ExerciseHistoryInfo | null;
   sets: SetRowData[];
@@ -162,6 +163,7 @@ export function WorkoutRunner({
         restSeconds: pe.restSeconds || user.defaultRestTimer || 90,
         targetRepMin: pe.targetRepMin,
         targetRepMax: pe.targetRepMax,
+        targetSets: pe.targetSets,
         historyInfo: hist,
         sets,
       };
@@ -515,6 +517,28 @@ export function WorkoutRunner({
     );
   }, 0);
 
+  // Stat Target vs Aktual per gerakan (hanya jika ada target dari program)
+  const targetStats: ExerciseTargetStat[] = exercises
+    .filter((ex) => ex.targetSets != null && ex.targetSets > 0)
+    .map((ex) => {
+      const done = ex.sets.filter((s) => s.isCompleted);
+      const targetReps =
+        ex.targetRepMin && ex.targetRepMax
+          ? `${ex.targetRepMin}–${ex.targetRepMax}`
+          : ex.targetRepMax != null
+            ? String(ex.targetRepMax)
+            : undefined;
+      return {
+        name: ex.name,
+        targetSets: ex.targetSets!,
+        actualSets: done.length,
+        targetReps,
+        actualAvgReps: done.length
+          ? Math.round(done.reduce((a, s) => a + (Number(s.reps) || 0), 0) / done.length)
+          : undefined,
+      };
+    });
+
   return (
     <div className="pb-40 max-w-lg mx-auto" style={{ touchAction: 'pan-y' }}>
       {/* Draft Recovery Banner */}
@@ -665,6 +689,23 @@ export function WorkoutRunner({
                     <span>{EQUIPMENT_TRANSLATIONS[ex.equipment]}</span>
                     <span aria-hidden="true">•</span>
                     <span className="font-mono whitespace-nowrap">±{ex.weightIncrement}kg</span>
+                    {ex.targetSets != null && ex.targetSets > 0 && (
+                      <>
+                        <span aria-hidden="true">•</span>
+                        <span
+                          className={`font-mono whitespace-nowrap px-1.5 py-0.5 rounded border ${
+                            ex.sets.filter((s) => s.isCompleted).length >= ex.targetSets
+                              ? 'text-emerald-400 border-emerald-500/20 bg-emerald-500/10'
+                              : 'text-zinc-400 border-white/[0.08] bg-white/[0.04]'
+                          }`}
+                        >
+                          {ex.sets.filter((s) => s.isCompleted).length}/{ex.targetSets}×
+                          {ex.targetRepMin && ex.targetRepMax
+                            ? `${ex.targetRepMin}–${ex.targetRepMax}`
+                            : (ex.targetRepMax ?? 10)}
+                        </span>
+                      </>
+                    )}
                   </div>
                   </div>
                 </div>
@@ -825,6 +866,7 @@ export function WorkoutRunner({
         totalVolume={summaryData.totalVolume}
         totalSets={summaryData.totalSets}
         newPRs={summaryData.newPRs}
+        targetStats={targetStats}
         onClose={() => {
           setSummaryData((prev) => ({ ...prev, isOpen: false }));
           router.push('/riwayat');

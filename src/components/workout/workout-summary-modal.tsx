@@ -1,8 +1,16 @@
 'use client';
 
 import Link from 'next/link';
-import { Trophy, Clock, Dumbbell, CheckCircle, ArrowRight } from 'lucide-react';
+import { Trophy, Clock, Dumbbell, CheckCircle, ArrowRight, Target } from 'lucide-react';
 import type { NewPRInfo } from '@/app/actions/workout-actions';
+
+export interface ExerciseTargetStat {
+  name: string;
+  targetSets: number;
+  actualSets: number;
+  targetReps?: string;
+  actualAvgReps?: number;
+}
 
 interface WorkoutSummaryModalProps {
   isOpen: boolean;
@@ -10,6 +18,7 @@ interface WorkoutSummaryModalProps {
   totalVolume: number;
   totalSets: number;
   newPRs: NewPRInfo[];
+  targetStats?: ExerciseTargetStat[];
   onClose: () => void;
 }
 
@@ -19,6 +28,7 @@ export function WorkoutSummaryModal({
   totalVolume,
   totalSets,
   newPRs,
+  targetStats = [],
   onClose,
 }: WorkoutSummaryModalProps) {
   if (!isOpen) return null;
@@ -105,6 +115,43 @@ export function WorkoutSummaryModal({
             <p className="font-bold text-sm text-zinc-200 font-mono">{totalSets} Set</p>
           </div>
         </div>
+
+        {/* Target vs Aktual */}
+        {targetStats.length > 0 && (
+          <div className="space-y-2 text-left bg-white/[0.02] border border-white/[0.08] rounded-2xl p-3.5">
+            <div className="flex items-center gap-1.5 text-zinc-300">
+              <Target className="w-3.5 h-3.5 text-emerald-400" />
+              <h4 className="text-xs font-bold uppercase tracking-wide">Target vs Aktual</h4>
+            </div>
+            <div className="space-y-1.5">
+              {targetStats.map((t) => {
+                const done = t.actualSets >= t.targetSets;
+                return (
+                  <div
+                    key={t.name}
+                    className="flex items-center justify-between gap-2 bg-zinc-900/80 border border-white/[0.06] rounded-xl px-2.5 py-2 text-xs"
+                  >
+                    <span className="font-semibold text-zinc-200 truncate">{t.name}</span>
+                    <span
+                      className={`font-mono tabular-nums whitespace-nowrap font-bold ${
+                        done ? 'text-emerald-400' : 'text-amber-400'
+                      }`}
+                    >
+                      {t.actualSets}/{t.targetSets} set
+                      {t.targetReps && (
+                        <span className="text-zinc-500 font-normal">
+                          {' '}
+                          · {t.targetReps}
+                          {t.actualAvgReps != null ? ` → ${t.actualAvgReps}` : ''}
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* New PRs Section */}
         {newPRs.length > 0 && (

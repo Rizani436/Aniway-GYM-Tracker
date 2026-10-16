@@ -231,13 +231,15 @@ export const ExerciseSetRow = memo(function ExerciseSetRow({
       {/* Baris meta: Lalu (referensi sesi sebelumnya) · RPE · Hapus */}
       <div className="col-span-full flex items-center gap-1.5 pl-0.5 mt-0.5">
         {set.previousRecord && (
-          <span
-            className="inline-flex items-center gap-1 text-[10px] font-mono font-semibold text-zinc-400 tabular-nums"
-            title="Sesi sebelumnya — beban × repetisi"
+          <button
+            type="button"
+            onClick={() => onChange({ weight: set.previousRecord!.weight, reps: set.previousRecord!.reps })}
+            className="inline-flex items-center gap-1 text-[10px] font-mono font-semibold text-zinc-400 tabular-nums active:text-emerald-300 transition-colors touch-manipulation"
+            title="Sesi sebelumnya — tap untuk isi beban & repetisi"
           >
             <History className="w-3 h-3 text-zinc-500 shrink-0" />
             {set.previousRecord.weight}×{set.previousRecord.reps}
-          </span>
+          </button>
         )}
 
         {/* Lebar tetap (w-12) supaya kolom tidak goyang saat RPE diisi/dikosongkan */}
