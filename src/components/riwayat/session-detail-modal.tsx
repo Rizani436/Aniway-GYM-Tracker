@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
+import Link from 'next/link';
 import {
   X,
   Clock,
@@ -14,6 +15,7 @@ import {
   Check,
   Trophy,
   Loader2,
+  FolderPlus,
 } from 'lucide-react';
 import { SetType } from '@prisma/client';
 import {
@@ -21,7 +23,8 @@ import {
   updateWorkoutSessionAction,
   updateSetLogAction,
 } from '@/app/actions/riwayat-actions';
-import { MUSCLE_TRANSLATIONS } from '@/lib/constants';
+import { saveSessionAsProgramAction } from '@/app/actions/latihan-actions';
+import { MUSCLE_TRANSLATIONS, PROGRAM_COLORS } from '@/lib/constants';
 
 interface SessionDetailModalProps {
   session: any | null;
@@ -47,8 +50,46 @@ export function SessionDetailModal({
   const [setError, setSetError] = useState<{ id: string; message: string } | null>(
     null
   );
+  const [showSaveProgram, setShowSaveProgram] = useState(false);
+  const [progName, setProgName] = useState('');
+  const [progDesc, setProgDesc] = useState('');
+  const [progColor, setProgColor] = useState(PROGRAM_COLORS[0].value);
+  const [savedProgramId, setSavedProgramId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setShowSaveProgram(false);
+    setSavedProgramId(null);
+  }, [session?.id, isOpen]);
 
   if (!isOpen || !session) return null;
+
+  const openSaveProgram = () => {
+    // Sesi yang berasal dari program diberi sufiks supaya tidak dobel nama di daftar program
+    setProgName(session.programId ? `${session.name} (Salinan)` : session.name);
+    setProgDesc('');
+    setProgColor(PROGRAM_COLORS[0].value);
+    setSavedProgramId(null);
+    setShowSaveProgram(true);
+  };
+
+  const handleSaveProgram = async () => {
+    try {
+      setIsLoading(true);
+      const res = await saveSessionAsProgramAction({
+        sessionId: session.id,
+        name: progName,
+        description: progDesc || undefined,
+        color: progColor,
+      });
+      setSavedProgramId(res.programId);
+      setShowSaveProgram(false);
+      onUpdated();
+    } catch (err: any) {
+      alert(err.message || 'Gagal menyimpan program.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSetBlur = async (
     setId: string,
@@ -162,6 +203,15 @@ export function SessionDetailModal({
               <>
                 <button
                   type="button"
+                  onClick={openSaveProgram}
+                  disabled={!session.exercises?.length}
+                  className="p-1.5 text-zinc-400 hover:text-emerald-300 rounded-lg hover:bg-zinc-800 disabled:opacity-40"
+                  title="Simpan sebagai program latihan"
+                >
+                  <FolderPlus className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
                   onClick={startEdit}
                   className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800"
                   title="Edit data sesi"
@@ -197,6 +247,74 @@ export function SessionDetailModal({
             </button>
           </div>
         </div>
+
+        {savedProgramId && (
+          <div className="mx-5 mb-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3 space-y-2">
+            <p className="text-xs font-bold text-emerald-300">✓ Tersimpan sebagai program</p>
+            <div className="flex gap-2">
+              <Link
+                href={`/latihan/program/${savedProgramId}`}
+                className="flex-1 text-center px-3 py-2 rounded-lg bg-white/[0.05] border border-white/[0.08] text-xs font-bold text-zinc-200"
+              >
+                Lihat Program
+              </Link>
+              <Link
+                href={`/workout?programId=${savedProgramId}`}
+                className="flex-1 text-center px-3 py-2 rounded-lg bg-emerald-500 text-zinc-950 text-xs font-bold"
+              >
+                Mulai Latihan
+              </Link>
+            </div>
+          </div>
+        )}
+        {showSaveProgram && !savedProgramId && (
+          <div className="mx-5 mb-3 bg-zinc-900/80 border border-zinc-800 rounded-xl p-3 space-y-2.5">
+            <p className="text-xs font-bold text-zinc-200">Simpan sebagai Program</p>
+            <input
+              type="text"
+              value={progName}
+              onChange={(e) => setProgName(e.target.value)}
+              placeholder="Nama program"
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-2 text-xs text-zinc-100 focus:outline-none focus:border-emerald-500"
+            />
+            <input
+              type="text"
+              value={progDesc}
+              onChange={(e) => setProgDesc(e.target.value)}
+              placeholder="Deskripsi (opsional)"
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-2 text-xs text-zinc-100 focus:outline-none focus:border-emerald-500"
+            />
+            <div className="flex gap-1.5 flex-wrap">
+              {PROGRAM_COLORS.map((c) => (
+                <button
+                  key={c.value}
+                  type="button"
+                  onClick={() => setProgColor(c.value)}
+                  className={`w-6 h-6 rounded-full transition ${progColor === c.value ? 'ring-2 ring-white ring-offset-2 ring-offset-zinc-900' : ''}`}
+                  style={{ backgroundColor: c.value }}
+                  aria-label={`Warna ${c.value}`}
+                />
+              ))}
+            </div>
+            <div className="flex gap-2 pt-0.5">
+              <button
+                type="button"
+                onClick={() => setShowSaveProgram(false)}
+                className="flex-1 px-3 py-2 rounded-lg bg-white/[0.05] border border-white/[0.08] text-xs font-bold text-zinc-300"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                disabled={isLoading || progName.trim().length < 2}
+                onClick={handleSaveProgram}
+                className="flex-1 px-3 py-2 rounded-lg bg-emerald-500 text-zinc-950 text-xs font-bold disabled:opacity-40"
+              >
+                {isLoading ? <Loader2 className="w-4 h-4 animate-spin inline" /> : 'Simpan Program'}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
