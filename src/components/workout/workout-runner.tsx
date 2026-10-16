@@ -114,6 +114,7 @@ export function WorkoutRunner({
   });
 
   const [isSaving, setIsSaving] = useState(false);
+  const [pendingFinish, setPendingFinish] = useState<ExerciseTargetStat[] | null>(null);
   const [expandedImageIdx, setExpandedImageIdx] = useState<number | null>(null);
   const [draftBanner, setDraftBanner] = useState<{ exists: boolean; date?: string }>({
     exists: false,
@@ -443,13 +444,23 @@ export function WorkoutRunner({
     }
   };
 
-  // Selesaikan Sesi Latihan
-  const handleFinishWorkout = async () => {
+  // Selesaikan Sesi Latihan — cek target belum tercapai dulu
+  const handleFinishWorkout = () => {
     if (exercises.length === 0) {
       alert('Tambahkan minimal 1 gerakan latihan sebelum menyelesaikan sesi.');
       return;
     }
 
+    const incomplete = targetStats.filter((t) => t.actualSets < t.targetSets);
+    if (incomplete.length > 0) {
+      setPendingFinish(incomplete);
+      return;
+    }
+
+    confirmFinish();
+  };
+
+  const confirmFinish = async () => {
     const completedSetsCount = exercises.reduce(
       (acc, ex) => acc + ex.sets.filter((s) => s.isCompleted).length,
       0
@@ -838,6 +849,47 @@ export function WorkoutRunner({
           className="w-full px-3.5 py-3 bg-white/[0.03] border border-white/[0.08] rounded-2xl text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/40 resize-none transition-colors"
         />
       </div>
+
+      {/* Dialog Konfirmasi Target Belum Tercapai */}
+      {pendingFinish && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
+          onClick={() => setPendingFinish(null)}
+        >
+          <div
+            className="w-full max-w-sm bg-[#101113] border border-white/[0.1] rounded-2xl p-5 animate-in fade-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-base font-bold text-white">Belum semua target tercapai</h3>
+            <div className="mt-3 space-y-1.5">
+              {pendingFinish.map((t) => (
+                <p key={t.name} className="text-xs font-semibold text-amber-400">
+                  {t.name} {t.actualSets}/{t.targetSets} set
+                </p>
+              ))}
+            </div>
+            <div className="mt-5 flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={() => setPendingFinish(null)}
+                className="w-full py-2.5 rounded-xl bg-white/[0.05] border border-white/[0.08] text-sm font-semibold text-zinc-300 active:scale-[0.98] transition-transform touch-manipulation"
+              >
+                Lanjutkan Latihan
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setPendingFinish(null);
+                  confirmFinish();
+                }}
+                className="w-full py-2.5 rounded-xl bg-emerald-500 text-zinc-950 text-sm font-bold active:scale-[0.98] transition-transform touch-manipulation"
+              >
+                Tetap Selesai
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Floating Rest Timer Bar */}
       {activeRestTimer && (
