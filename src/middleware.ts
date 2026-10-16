@@ -89,7 +89,8 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/login') || pathname.startsWith('/auth');
   const isPublicAsset =
     pathname.startsWith('/manifest.json') ||
-    pathname.startsWith('/icons');
+    pathname.startsWith('/icons') ||
+    pathname === '/sw.js';
 
   if (isPublicAsset || isAuthPage) {
     return supabaseResponse;
