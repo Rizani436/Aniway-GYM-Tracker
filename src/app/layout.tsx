@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { QueryProvider } from '@/providers/query-provider';
 import { BottomNav } from '@/components/layout/bottom-nav';
+import { RegisterSw } from '../components/pwa/register-sw';
 
 export const metadata: Metadata = {
   title: 'Aniway - Gym Tracker Indonesia',
@@ -38,6 +39,7 @@ export default function RootLayout({
           {children}
           <BottomNav />
         </QueryProvider>
+        <RegisterSw />
       </body>
     </html>
   );
