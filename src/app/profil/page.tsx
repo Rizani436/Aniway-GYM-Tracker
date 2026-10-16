@@ -52,8 +52,8 @@ export default async function ProfilPage() {
       {/* Berat Badan */}
       <BodyWeightCard data={data} />
 
-      {/* Volume per Otot (7 hari) */}
-      <MuscleVolumeCard data={muscleVolume} />
+      {/* Volume per Otot (initial 7 hari, toggle 7/30 di client) */}
+      <MuscleVolumeCard initialData={muscleVolume} />
 
       {/* App Info Box */}
       <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06] space-y-2">
