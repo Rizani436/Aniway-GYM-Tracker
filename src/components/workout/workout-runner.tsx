@@ -18,8 +18,13 @@ import {
   ArrowLeft,
   ChevronDown,
   X,
+  StickyNote,
 } from 'lucide-react';
+import { format } from 'date-fns';
+import { id as localeId } from 'date-fns/locale';
 import Link from 'next/link';
+
+import { cn } from '@/lib/utils';
 
 import { ExerciseSetRow, type SetRowData } from './exercise-set-row';
 import { PlateCalculatorSheet } from './plate-calculator-sheet';
@@ -116,6 +121,8 @@ export function WorkoutRunner({
   const [isSaving, setIsSaving] = useState(false);
   const [pendingFinish, setPendingFinish] = useState<ExerciseTargetStat[] | null>(null);
   const [expandedImageIdx, setExpandedImageIdx] = useState<number | null>(null);
+  // Indeks gerakan yang panel catatannya sedang dibuka
+  const [openNoteIdx, setOpenNoteIdx] = useState<number | null>(null);
   const [draftBanner, setDraftBanner] = useState<{ exists: boolean; date?: string }>({
     exists: false,
   });
@@ -166,6 +173,7 @@ export function WorkoutRunner({
         targetRepMin: pe.targetRepMin,
         targetRepMax: pe.targetRepMax,
         targetSets: pe.targetSets,
+        notes: pe.notes ?? undefined,
         historyInfo: hist,
         sets,
       };
@@ -292,6 +300,15 @@ export function WorkoutRunner({
     },
     []
   );
+
+  // Handler update catatan per gerakan
+  const handleUpdateExerciseNotes = useCallback((exerciseIndex: number, value: string) => {
+    setExercises((prev) => {
+      const next = [...prev];
+      next[exerciseIndex] = { ...next[exerciseIndex], notes: value };
+      return next;
+    });
+  }, []);
 
   // Handler centang set selesai -> Picu Timer Istirahat
   const handleToggleComplete = useCallback(
@@ -704,6 +721,15 @@ export function WorkoutRunner({
                     <span>{EQUIPMENT_TRANSLATIONS[ex.equipment]}</span>
                     <span aria-hidden="true">•</span>
                     <span className="font-mono whitespace-nowrap">±{ex.weightIncrement}kg</span>
+                    {ex.notes && (
+                      <>
+                        <span aria-hidden="true">•</span>
+                        <span className="inline-flex items-center gap-1 text-amber-400 whitespace-nowrap">
+                          <StickyNote className="w-3 h-3" />
+                          catatan
+                        </span>
+                      </>
+                    )}
                     {ex.targetSets != null && ex.targetSets > 0 && (
                       <>
                         <span aria-hidden="true">•</span>
@@ -823,6 +849,53 @@ export function WorkoutRunner({
                 <Plus className="w-3.5 h-3.5" />
                 Tambah Set
               </button>
+
+              {/* Catatan gerakan: isi sendiri + riwayat dari sesi sebelumnya */}
+              <button
+                type="button"
+                onClick={() => setOpenNoteIdx(openNoteIdx === exIndex ? null : exIndex)}
+                className="w-full text-left px-3 py-2 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/[0.07] flex items-start gap-2 transition-colors"
+              >
+                <StickyNote className={cn('w-3.5 h-3.5 shrink-0 mt-0.5', ex.notes ? 'text-amber-400' : 'text-zinc-500')} />
+                <span className={cn('text-[11px] flex-1 min-w-0', ex.notes ? 'text-amber-200/90 whitespace-pre-wrap' : 'text-zinc-500')}>
+                  {ex.notes || 'Tambah catatan gerakan…'}
+                </span>
+                {(ex.historyInfo?.noteHistory?.length ?? 0) > 0 && (
+                  <span className="text-[9px] font-bold font-mono px-1.5 py-0.5 rounded bg-white/[0.06] text-zinc-400 shrink-0 tabular-nums">
+                    {ex.historyInfo?.noteHistory?.length} riwayat
+                  </span>
+                )}
+              </button>
+
+              {openNoteIdx === exIndex && (
+                <div className="space-y-2">
+                  <textarea
+                    value={ex.notes ?? ''}
+                    onChange={(e) => handleUpdateExerciseNotes(exIndex, e.target.value)}
+                    placeholder="Catatan gerakan (mis. pin no. 5, bahu kiri nyeri, ganti grip lebar…)"
+                    rows={2}
+                    className="w-full px-3 py-2.5 bg-white/[0.03] border border-white/[0.08] rounded-xl text-[12px] text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/60 focus:ring-1 focus:ring-amber-500/30 resize-none transition-colors"
+                  />
+                  {(ex.historyInfo?.noteHistory?.length ?? 0) > 0 && (
+                    <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-2.5 space-y-1.5">
+                      <p className="text-[9px] font-bold uppercase tracking-wider text-zinc-500">Catatan sebelumnya — tap untuk pakai</p>
+                      {ex.historyInfo!.noteHistory.map((n, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => handleUpdateExerciseNotes(exIndex, n.notes)}
+                          className="w-full text-left flex items-start gap-2 px-2 py-1.5 rounded-lg hover:bg-white/[0.05] active:bg-white/[0.08] transition-colors"
+                        >
+                          <span className="text-[9px] font-bold font-mono text-zinc-500 shrink-0 mt-0.5 tabular-nums whitespace-nowrap">
+                            {format(new Date(n.date), 'd MMM', { locale: localeId })}
+                          </span>
+                          <span className="text-[11px] text-zinc-300 flex-1 min-w-0 whitespace-pre-wrap">{n.notes}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ))
         )}

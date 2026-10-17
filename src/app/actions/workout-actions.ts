@@ -29,6 +29,8 @@ export type ExerciseHistoryInfo = {
     reason: string;
   } | null;
   avgSets: Array<{ weight: number; reps: number } | null>;
+  /** Catatan gerakan dari sesi-sesi sebelumnya (yang ada catatannya), terbaru dulu. */
+  noteHistory: Array<{ date: Date; notes: string }>;
 };
 
 export async function getWorkoutInitialDataAction(
@@ -140,7 +142,7 @@ async function getExerciseHistoryForUser(
   exerciseId: string,
   targetRepMax?: number
 ): Promise<ExerciseHistoryInfo> {
-  const [lastSessionExercise, best1RMAgg, recentSessions] = await Promise.all([
+  const [lastSessionExercise, best1RMAgg, recentSessions, noteSessionExercises] = await Promise.all([
     prisma.sessionExercise.findFirst({
       where: {
         userId,
@@ -181,6 +183,18 @@ async function getExerciseHistoryForUser(
         },
       },
     }),
+    // Riwayat catatan gerakan dari sesi sebelumnya (hanya yang ada catatannya)
+    prisma.sessionExercise.findMany({
+      where: {
+        userId,
+        exerciseId,
+        notes: { not: null },
+        workoutSession: { isCompleted: true },
+      },
+      orderBy: { performedAt: 'desc' },
+      take: 5,
+      select: { performedAt: true, notes: true },
+    }),
   ]);
 
   const best1RM = best1RMAgg._max.estimated1RM || 0;
@@ -192,6 +206,7 @@ async function getExerciseHistoryForUser(
       best1RM,
       progressiveOverloadSuggestion: null,
       avgSets: [],
+      noteHistory: [],
     };
   }
 
@@ -244,12 +259,19 @@ async function getExerciseHistoryForUser(
       )
     : [];
 
+  // Riwayat catatan: buang entri kosong/spasi saja, batasi 5 terbaru.
+  const noteHistory = noteSessionExercises
+    .map((se) => ({ date: se.performedAt, notes: (se.notes || '').trim() }))
+    .filter((n) => n.notes.length > 0)
+    .slice(0, 5);
+
   return {
     lastSessionDate: lastSessionExercise.performedAt,
     previousSets,
     best1RM,
     progressiveOverloadSuggestion,
     avgSets,
+    noteHistory,
   };
 }
 
