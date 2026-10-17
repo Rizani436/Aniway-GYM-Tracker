@@ -1,8 +1,9 @@
 import { PrismaClient, MuscleGroup, EquipmentType } from '@prisma/client';
+import { newExercises } from './seed-new-exercises';
 
 const prisma = new PrismaClient();
 
-interface SeedExercise {
+export interface SeedExercise {
   name: string;
   primaryMuscle: MuscleGroup;
   secondaryMuscles: MuscleGroup[];
@@ -1096,12 +1097,16 @@ const machineExercises: SeedExercise[] = [
 ];
 
 async function main() {
-  console.log('Memulai proses seeding 40 gerakan mesin...');
+  // Gabungan: 44 gerakan mesin/kabel lama + gerakan hasil kurasi (seed-new-exercises.ts).
+  // Loop di bawah generik: menangani kedua daftar, idempoten (update bila nama sudah ada).
+  const allExercises: SeedExercise[] = [...machineExercises, ...newExercises];
+
+  console.log(`Memulai proses seeding ${allExercises.length} gerakan...`);
 
   let createdCount = 0;
   let updatedCount = 0;
 
-  for (const ex of machineExercises) {
+  for (const ex of allExercises) {
     const existing = await prisma.exercise.findFirst({
       where: {
         name: ex.name,
@@ -1121,7 +1126,9 @@ async function main() {
           tips: ex.tips,
           commonMistakes: ex.commonMistakes,
           videoUrl: ex.videoUrl,
-          imageUrl: IMAGE_URLS[ex.name] ?? existing.imageUrl ?? null,
+          // Urutan: peta lama menang, lalu imageUrl bawaan entri (gerakan kurasi),
+          // baru pertahankan gambar yang sudah ada di DB.
+          imageUrl: IMAGE_URLS[ex.name] ?? ex.imageUrl ?? existing.imageUrl ?? null,
           alternatives: ex.alternatives,
           isCustom: false,
           isArchived: false,
@@ -1141,7 +1148,7 @@ async function main() {
           tips: ex.tips,
           commonMistakes: ex.commonMistakes,
           videoUrl: ex.videoUrl,
-          imageUrl: IMAGE_URLS[ex.name] ?? null,
+          imageUrl: IMAGE_URLS[ex.name] ?? ex.imageUrl ?? null,
           alternatives: ex.alternatives,
           isCustom: false,
           isArchived: false,
