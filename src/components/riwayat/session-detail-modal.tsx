@@ -16,6 +16,7 @@ import {
   Trophy,
   Loader2,
   FolderPlus,
+  StickyNote,
 } from 'lucide-react';
 import { SetType } from '@prisma/client';
 import {
@@ -481,6 +482,16 @@ export function SessionDetailModal({
                     </div>
                   ))}
                 </div>
+
+                {/* Catatan gerakan (tersimpan saat latihan) */}
+                {se.notes && (
+                  <div className="flex items-start gap-2 bg-amber-500/[0.07] border border-amber-500/20 rounded-lg px-2.5 py-2">
+                    <StickyNote className="w-3.5 h-3.5 text-amber-400/80 shrink-0 mt-0.5" />
+                    <p className="text-[11px] text-amber-100/90 leading-relaxed whitespace-pre-wrap flex-1 min-w-0">
+                      {se.notes}
+                    </p>
+                  </div>
+                )}
               </div>
             ))}
           </div>
