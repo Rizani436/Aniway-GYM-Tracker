@@ -356,24 +356,37 @@ export async function saveWorkoutSessionAction(input: SaveWorkoutSessionInput) {
   });
 
   // 3. Simpan ke database dalam Prisma Transaction
-  const createdSession = await prisma.$transaction(async (tx) => {
-    const session = await tx.workoutSession.create({
-      data: {
-        userId: user.id,
-        programId: data.programId || null,
-        name: data.name,
-        startedAt,
-        endedAt,
-        durationSec: data.durationSec,
-        totalVolume,
-        notes: data.notes || null,
-        isCompleted: true,
-      },
-    });
-
-    for (const exData of processedExercises) {
-      const sessionExercise = await tx.sessionExercise.create({
+  //
+  // PENTING (pernah jadi bug produksi): interactive transaction Prisma punya
+  // batas default 5 detik. DB (Supabase pooler Sydney) berlatensi ~410 ms/query,
+  // jadi transaksi dengan 1 query per gerakan + 1 per grup set MUDAH lewat batas:
+  // sesi 9 gerakan = 19 query ≈ 8 detik → gagal `P2028: Transaction not found`
+  // dan user cuma melihat "An error occurred in the Server Components render".
+  //
+  // Karena itu semua penulisan dilakukan sebagai BULK query, bukan per-baris:
+  //   create sesi (1) → createMany SessionExercise, kembalikan id (1)
+  //   → createMany SetLog (1)  = 3 query TOTAL, konstan untuk berapa pun jumlah gerakan.
+  // Interactive transaction + timeout 15s tetap dipertahankan sebagai jaring aman.
+  const createdSession = await prisma.$transaction(
+    async (tx) => {
+      const session = await tx.workoutSession.create({
         data: {
+          userId: user.id,
+          programId: data.programId || null,
+          name: data.name,
+          startedAt,
+          endedAt,
+          durationSec: data.durationSec,
+          totalVolume,
+          notes: data.notes || null,
+          isCompleted: true,
+        },
+      });
+
+      // createManyAndReturn (Prisma 5.14+/Postgres) mengembalikan id tiap baris
+      // sesuai urutan input → pasangan index dengan processedExercises valid.
+      const createdExercises = await tx.sessionExercise.createManyAndReturn({
+        data: processedExercises.map((exData) => ({
           workoutSessionId: session.id,
           userId: user.id,
           exerciseId: exData.exerciseId,
@@ -381,21 +394,24 @@ export async function saveWorkoutSessionAction(input: SaveWorkoutSessionInput) {
           restSeconds: exData.restSeconds,
           notes: exData.notes,
           performedAt: exData.performedAt,
-        },
+        })),
+        select: { id: true },
       });
 
-      if (exData.sets.length > 0) {
-        await tx.setLog.createMany({
-          data: exData.sets.map((s) => ({
-            ...s,
-            sessionExerciseId: sessionExercise.id,
-          })),
-        });
-      }
-    }
+      const setRows = processedExercises.flatMap((exData, i) => {
+        const sessionExerciseId = createdExercises[i]?.id;
+        if (!sessionExerciseId) return [];
+        return exData.sets.map((s) => ({ ...s, sessionExerciseId }));
+      });
 
-    return session;
-  });
+      if (setRows.length > 0) {
+        await tx.setLog.createMany({ data: setRows });
+      }
+
+      return session;
+    },
+    { timeout: 15_000 }
+  );
 
   revalidatePath('/riwayat');
   revalidatePath('/workout');

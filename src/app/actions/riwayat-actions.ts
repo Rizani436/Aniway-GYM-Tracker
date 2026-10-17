@@ -207,69 +207,80 @@ export async function createManualWorkoutSessionAction(input: ManualSessionInput
   const durationSec = (input.durationMin || 45) * 60;
   const endedDate = new Date(sessionDate.getTime() + durationSec * 1000);
 
-  // Kalkulasi total volume & simpan
-  let totalVolume = 0;
+  // Kalkulasi total volume & simpan.
+  //
+  // PENTING: interactive transaction Prisma default timeout 5 detik, sementara DB
+  // berlatensi ~410 ms/query. Versi lama menulis 1 query per gerakan + 1 query per
+  // SET: sesi 9 gerakan × 4 set = 47 query ≈ 19 detik → selalu gagal `P2028`
+  // (user hanya melihat pesan error generik Server Components). Sekarang BULK:
+  // 1 create sesi + 1 createMany SessionExercise + 1 createMany SetLog + 1 update.
+  const setRows = input.exercises.flatMap((ex, i) =>
+    ex.sets.map((set, s) => {
+      const weight = Number(set.weight) || 0;
+      const reps = Number(set.reps) || 0;
+      return {
+        exIndex: i,
+        exerciseId: ex.exerciseId,
+        setNumber: s + 1,
+        weight,
+        reps,
+        setType: set.setType || SetType.NORMAL,
+        estimated1RM:
+          reps > 0 && weight > 0 ? Math.round((weight * (1 + reps / 30)) * 10) / 10 : 0,
+      };
+    })
+  );
 
-  const session = await prisma.$transaction(async (tx) => {
-    const createdSession = await tx.workoutSession.create({
-      data: {
-        userId: user.id,
-        name: input.name,
-        startedAt: sessionDate,
-        endedAt: endedDate,
-        durationSec,
-        totalVolume: 0,
-        notes: input.notes || null,
-        isCompleted: true,
-      },
-    });
+  const totalVolume = setRows.reduce((acc, s) => acc + s.weight * s.reps, 0);
 
-    for (let i = 0; i < input.exercises.length; i++) {
-      const ex = input.exercises[i];
-      const sessionExercise = await tx.sessionExercise.create({
+  const session = await prisma.$transaction(
+    async (tx) => {
+      const createdSession = await tx.workoutSession.create({
         data: {
+          userId: user.id,
+          name: input.name,
+          startedAt: sessionDate,
+          endedAt: endedDate,
+          durationSec,
+          totalVolume,
+          notes: input.notes || null,
+          isCompleted: true,
+        },
+      });
+
+      const createdExercises = await tx.sessionExercise.createManyAndReturn({
+        data: input.exercises.map((ex, i) => ({
           workoutSessionId: createdSession.id,
           userId: user.id,
           exerciseId: ex.exerciseId,
           sortOrder: i + 1,
           performedAt: sessionDate,
-        },
+        })),
+        select: { id: true },
       });
 
-      for (let s = 0; s < ex.sets.length; s++) {
-        const set = ex.sets[s];
-        const weight = Number(set.weight) || 0;
-        const reps = Number(set.reps) || 0;
-        const estimated1RM =
-          reps > 0 && weight > 0 ? Math.round((weight * (1 + reps / 30)) * 10) / 10 : 0;
-
-        totalVolume += weight * reps;
-
-        await tx.setLog.create({
-          data: {
-            sessionExerciseId: sessionExercise.id,
+      if (setRows.length > 0) {
+        await tx.setLog.createMany({
+          data: setRows.map((s) => ({
+            sessionExerciseId: createdExercises[s.exIndex]?.id ?? createdExercises[0].id,
             userId: user.id,
-            exerciseId: ex.exerciseId,
-            setNumber: s + 1,
-            weight,
-            reps,
-            setType: set.setType || SetType.NORMAL,
-            estimated1RM,
+            exerciseId: s.exerciseId,
+            setNumber: s.setNumber,
+            weight: s.weight,
+            reps: s.reps,
+            setType: s.setType,
+            estimated1RM: s.estimated1RM,
             isCompleted: true,
             isPersonalRecord: false,
             performedAt: sessionDate,
-          },
+          })),
         });
       }
-    }
 
-    await tx.workoutSession.update({
-      where: { id: createdSession.id },
-      data: { totalVolume },
-    });
-
-    return createdSession;
-  });
+      return createdSession;
+    },
+    { timeout: 15_000 }
+  );
 
   revalidatePath('/riwayat');
   revalidatePath('/');
@@ -298,26 +309,31 @@ export async function updateSetLogAction(
   // Satu transaksi: update set + hitung ulang totalVolume sesi dari semua set selesai
   // (definisi volume sama dengan saveWorkoutSessionAction; aggregate Prisma tak bisa mengalikan kolom).
   // ponytail: isPersonalRecord sengaja tidak dihitung ulang — flag momen historis, keputusan plan.
-  await prisma.$transaction(async (tx) => {
-    await tx.setLog.update({
-      where: { id: setId },
-      data: { weight, reps, estimated1RM },
-    });
+  await prisma.$transaction(
+    async (tx) => {
+      await tx.setLog.update({
+        where: { id: setId },
+        data: { weight, reps, estimated1RM },
+      });
 
-    const sessionSets = await tx.setLog.findMany({
-      where: {
-        isCompleted: true,
-        sessionExercise: { workoutSessionId: set.sessionExercise.workoutSessionId },
-      },
-      select: { weight: true, reps: true },
-    });
-    const totalVolume = sessionSets.reduce((s, x) => s + x.weight * x.reps, 0);
+      const sessionSets = await tx.setLog.findMany({
+        where: {
+          isCompleted: true,
+          sessionExercise: { workoutSessionId: set.sessionExercise.workoutSessionId },
+        },
+        select: { weight: true, reps: true },
+      });
+      const totalVolume = sessionSets.reduce((s, x) => s + x.weight * x.reps, 0);
 
-    await tx.workoutSession.update({
-      where: { id: set.sessionExercise.workoutSessionId },
-      data: { totalVolume },
-    });
-  });
+      await tx.workoutSession.update({
+        where: { id: set.sessionExercise.workoutSessionId },
+        data: { totalVolume },
+      });
+    },
+    // DB berlatensi ~410 ms/query (Supabase Sydney); 3 query + spike jaringan
+    // bisa melewati batas default 5 detik → P2028.
+    { timeout: 15_000 }
+  );
 
   revalidatePath('/riwayat');
   revalidatePath('/');
