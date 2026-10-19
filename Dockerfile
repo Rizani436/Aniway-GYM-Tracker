@@ -79,7 +79,8 @@ RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
 # Copy static assets & standalone bundle
-COPY --from=builder /app/public ./public
+COPY --from=builder --chown=nextjs:nogroup /app/public ./public
+RUN find public -type d -exec chmod 755 {} + && find public -type f -exec chmod 644 {} +
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
