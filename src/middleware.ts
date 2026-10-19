@@ -90,9 +90,15 @@ export async function middleware(request: NextRequest) {
   const isPublicAsset =
     pathname.startsWith('/manifest.json') ||
     pathname.startsWith('/icons') ||
+    pathname.startsWith('/offline.html') ||
     pathname === '/sw.js';
+  // /workout sengaja TIDAK di-gate auth: halaman ini harus bisa dibuka offline
+  // (tempat gym sering tanpa sinyal). Datanya bukan rahasia — seluruh isinya
+  // berasal dari snapshot perangkat (localStorage) milik user itu sendiri, dan
+  // saat online pun data diambil lewat server action yang tetap butuh sesi.
+  const isOfflineCapablePage = pathname === '/workout';
 
-  if (isPublicAsset || isAuthPage) {
+  if (isPublicAsset || isAuthPage || isOfflineCapablePage) {
     return supabaseResponse;
   }
 
