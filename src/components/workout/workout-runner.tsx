@@ -40,6 +40,8 @@ import {
 import { requestScreenWakeLock, releaseScreenWakeLock } from '@/lib/wake-lock';
 import { MUSCLE_TRANSLATIONS, EQUIPMENT_TRANSLATIONS } from '@/lib/constants';
 import { saveWorkoutSnapshot, loadWorkoutSnapshot, findSnapshotUserId, type WorkoutSnapshot } from '@/lib/workout-cache';
+import { enqueueSession, pendingCount, flushQueue } from '@/lib/offline-queue';
+import { newClientSessionId } from '@/lib/client-id';
 
 interface WorkoutExerciseState {
   exerciseId: string;
@@ -117,6 +119,8 @@ export function WorkoutRunner({
     totalVolume: number;
     totalSets: number;
     newPRs: NewPRInfo[];
+    /** true = sesi tidak terkirim ke server, tersimpan di antrean perangkat */
+    queuedOffline?: boolean;
   }>({
     isOpen: false,
     durationSec: 0,
@@ -126,6 +130,8 @@ export function WorkoutRunner({
   });
 
   const [isSaving, setIsSaving] = useState(false);
+  // Jumlah sesi di antrean perangkat yang belum terkirim ke server
+  const [pending, setPending] = useState(0);
   const [pendingFinish, setPendingFinish] = useState<ExerciseTargetStat[] | null>(null);
   const [expandedImageIdx, setExpandedImageIdx] = useState<number | null>(null);
   // Indeks gerakan yang panel catatannya sedang dibuka
@@ -313,6 +319,26 @@ export function WorkoutRunner({
       releaseScreenWakeLock();
     };
   }, []);
+
+  // Kuras antrean sesi offline: saat app dibuka, saat jaringan kembali online,
+  // dan saat service worker meminta flush (Background Sync di Chrome Android).
+  useEffect(() => {
+    if (!currentUser) return;
+    const sync = async () => {
+      await flushQueue(currentUser.id, (input) => saveWorkoutSessionAction(input));
+      setPending(pendingCount(currentUser.id));
+    };
+    sync();
+    window.addEventListener('online', sync);
+    const onMsg = (e: MessageEvent) => {
+      if (e.data?.type === 'FLUSH_QUEUE') sync();
+    };
+    navigator.serviceWorker?.addEventListener('message', onMsg);
+    return () => {
+      window.removeEventListener('online', sync);
+      navigator.serviceWorker?.removeEventListener('message', onMsg);
+    };
+  }, [currentUser?.id]);
 
   // Format Timer mm:ss atau hh:mm:ss
   const formatTimer = (totalSecs: number) => {
@@ -559,7 +585,30 @@ export function WorkoutRunner({
         })),
       };
 
-      const result = await saveWorkoutSessionAction(payload);
+      const clientSessionId = newClientSessionId();
+      let result: Awaited<ReturnType<typeof saveWorkoutSessionAction>>;
+      try {
+        result = await saveWorkoutSessionAction({ ...payload, id: clientSessionId });
+      } catch (err) {
+        // Offline / jaringan gagal -> simpan ke antrean perangkat, jangan hilangkan data user.
+        // Kunci `clientSessionId` dikirim ke server saat sync sehingga tidak ada sesi dobel.
+        const msg = String((err as Error)?.message ?? '');
+        if (!navigator.onLine || /fetch|network|timeout/i.test(msg)) {
+          if (currentUser) enqueueSession(currentUser.id, { ...payload, clientSessionId });
+          localStorage.removeItem(storageKey);
+          setPending(currentUser ? pendingCount(currentUser.id) : 0);
+          setSummaryData({
+            isOpen: true,
+            durationSec: elapsedSeconds,
+            totalVolume: 0,
+            totalSets: completedSetsCount,
+            newPRs: [],
+            queuedOffline: true,
+          });
+          return;
+        }
+        throw err;
+      }
 
       // Bersihkan draft localStorage
       localStorage.removeItem(storageKey);
@@ -571,6 +620,7 @@ export function WorkoutRunner({
         totalVolume: result.totalVolume,
         totalSets: completedSetsCount,
         newPRs: result.newPRs || [],
+        queuedOffline: false,
       });
     } catch (err: any) {
       alert(err.message || 'Gagal menyimpan sesi latihan.');
@@ -616,6 +666,12 @@ export function WorkoutRunner({
       {isOffline && (
         <div className="mb-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-200">
           <strong>Mode offline</strong> — sesi tersimpan di perangkat dan dikirim otomatis saat online.
+        </div>
+      )}
+
+      {pending > 0 && (
+        <div className="mb-3 rounded-xl border border-sky-500/30 bg-sky-500/10 px-3 py-2 text-[11px] text-sky-200">
+          {pending} sesi menunggu dikirim ke server.
         </div>
       )}
 
@@ -1041,6 +1097,7 @@ export function WorkoutRunner({
         totalVolume={summaryData.totalVolume}
         totalSets={summaryData.totalSets}
         newPRs={summaryData.newPRs}
+        queuedOffline={summaryData.queuedOffline}
         targetStats={targetStats}
         onClose={() => {
           setSummaryData((prev) => ({ ...prev, isOpen: false }));

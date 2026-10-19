@@ -18,6 +18,8 @@ interface WorkoutSummaryModalProps {
   totalVolume: number;
   totalSets: number;
   newPRs: NewPRInfo[];
+  /** true = sesi belum terkirim ke server, masih di antrean perangkat */
+  queuedOffline?: boolean;
   targetStats?: ExerciseTargetStat[];
   onClose: () => void;
 }
@@ -28,6 +30,7 @@ export function WorkoutSummaryModal({
   totalVolume,
   totalSets,
   newPRs,
+  queuedOffline = false,
   targetStats = [],
   onClose,
 }: WorkoutSummaryModalProps) {
@@ -81,9 +84,18 @@ export function WorkoutSummaryModal({
             Latihan Selesai! 🔥
           </h2>
           <p className="text-sm text-zinc-400">
-            Sesi latihan berhasil disimpan ke database. Konsistensi hari ini luar biasa!
+            {queuedOffline
+              ? 'Sesi tersimpan di perangkat ini dan akan dikirim ke server saat online.'
+              : 'Sesi latihan berhasil disimpan ke database. Konsistensi hari ini luar biasa!'}
           </p>
         </div>
+
+        {/* Antrean offline — sesi belum sampai server */}
+        {queuedOffline && (
+          <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-200">
+            Tersimpan di perangkat — akan dikirim otomatis saat online.
+          </div>
+        )}
 
         {/* PR Banner — di atas statistik */}
         {prCount > 0 && (
