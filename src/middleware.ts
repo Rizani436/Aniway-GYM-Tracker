@@ -91,6 +91,10 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/manifest.json') ||
     pathname.startsWith('/icons') ||
     pathname.startsWith('/offline.html') ||
+    // Digital Asset Links: Chrome mengambil file ini TANPA cookie saat memverifikasi
+    // bahwa APK (TWA) berhak membuka domain ini. Kalau di-redirect ke /login,
+    // asosiasi gagal dan APK tampil dengan address bar (tidak fullscreen).
+    pathname.startsWith('/.well-known') ||
     pathname === '/sw.js';
   // /workout sengaja TIDAK di-gate auth: halaman ini harus bisa dibuka offline
   // (tempat gym sering tanpa sinyal). Datanya bukan rahasia — seluruh isinya

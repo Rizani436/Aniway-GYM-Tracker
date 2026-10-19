@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "online.aniway.twa",
+      "sha256_cert_fingerprints": [
+        "09:F0:12:97:D0:9D:4A:C9:6F:4C:35:92:EC:82:E4:07:CE:57:6C:9F:25:62:FC:4F:72:0E:6C:18:0A:BA:6D:E7"
+      ]
+    }
+  }
+]
