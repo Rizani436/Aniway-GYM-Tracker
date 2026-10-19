@@ -292,6 +292,27 @@ export async function saveWorkoutSessionAction(input: SaveWorkoutSessionInput) {
   }
 
   const data = parsed.data;
+
+  // Idempotensi: id dari klien (clientSessionId) dipakai sebagai WorkoutSession.id,
+  // supaya kiriman ulang dari antrean offline TIDAK membuat sesi dobel.
+  if (data.id) {
+    const sudahAda = await prisma.workoutSession.findUnique({
+      where: { id: data.id },
+      select: { id: true, totalVolume: true, durationSec: true, userId: true },
+    });
+    if (sudahAda) {
+      if (sudahAda.userId !== user.id) throw new Error('Sesi sudah ada dan bukan milik Anda.');
+      return {
+        success: true,
+        sessionId: sudahAda.id,
+        totalVolume: sudahAda.totalVolume,
+        durationSec: sudahAda.durationSec,
+        newPRs: [],
+        duplicate: true,
+      };
+    }
+  }
+
   const startedAt = new Date(data.startedAt);
   const endedAt = data.endedAt ? new Date(data.endedAt) : new Date();
 
@@ -393,6 +414,7 @@ export async function saveWorkoutSessionAction(input: SaveWorkoutSessionInput) {
     async (tx) => {
       const session = await tx.workoutSession.create({
         data: {
+          id: data.id || undefined, // undefined -> default cuid()
           userId: user.id,
           programId: data.programId || null,
           name: data.name,
