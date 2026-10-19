@@ -46,6 +46,25 @@ RUN node -e "\
 
 RUN npm run build
 
+# Gagalkan build bila aset `public/` tidak ikut masuk context.
+#
+# KENAPA: kalau folder public/ tidak ada (mis. build dijalankan dari salinan repo
+# yang belum lengkap), Next.js TIDAK error — ia hanya membalas 400 Bad Request
+# untuk setiap berkas publik (.png/.json/.js) dan 404 untuk .ico. Akibatnya
+# /manifest.json, /sw.js, dan ikon PWA mati di produksi tanpa jejak di log build.
+RUN node -e "\
+  const fs = require('fs');\
+  const wajib = ['manifest.json','sw.js','icon-192.png','icon-512.png'];\
+  const hilang = wajib.filter((f) => !fs.existsSync('public/' + f));\
+  if (hilang.length) {\
+    console.error('\n[BUILD GAGAL] Folder public/ tidak lengkap. Berkas hilang: ' + hilang.join(', '));\
+    console.error('Penyebab umum: build dijalankan dari salinan repo yang belum lengkap.');\
+    console.error('Jalankan: git pull && git status --short, pastikan folder public/ ada, lalu build ulang.\n');\
+    process.exit(1);\
+  }\
+  console.log('[OK] aset public/ lengkap: ' + wajib.join(', '));\
+"
+
 # 4. Production Runner stage
 FROM node:20-alpine AS runner
 RUN apk add --no-cache libc6-compat openssl

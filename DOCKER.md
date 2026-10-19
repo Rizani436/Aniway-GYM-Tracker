@@ -102,6 +102,35 @@ docker build \
    ```
 4. Pasang reverse proxy Nginx / Caddy / Cloudflare Tunnel untuk mengarahkan domain (misal: `gym.domainanda.com`) dengan SSL HTTPS ke port `3000`.
 
+---
+
+## GEJALA: berkas `public/` balas 400 Bad Request di produksi
+
+**Ini bukan bug aplikasi.** Kalau `/manifest.json`, `/sw.js`, atau `/icon-192.png` membalas
+**400 Bad Request** (dan `.ico` membalas 404) padahal di mesin lokal semuanya 200, artinya
+**folder `public/` tidak ada di dalam build context** — biasanya karena build dijalankan dari
+salinan repo yang belum lengkap (folder lama hasil copy/upload, bukan `git pull`).
+
+Diagnosis cepat dari komputer Anda:
+
+```bash
+# 400 untuk .json/.js/.png + 404 untuk .ico  => public/ tidak ada di image
+curl -s -o /dev/null -w "%{http_code}\n" https://domainanda.com/manifest.json
+```
+
+Perbaikan di VPS — build dari repo yang benar:
+
+```bash
+cd <folder yang benar-benar dipakai build>
+git pull
+ls public/            # WAJIB terlihat: manifest.json sw.js icon-*.png offline.html
+docker compose up -d --build
+docker compose logs -f | grep -i "aset public"
+```
+
+Build sekarang **gagal lebih awal dengan pesan jelas** bila `public/` tidak lengkap
+(pemeriksaan di Dockerfile), jadi kesalahan ini tidak akan lolos diam-diam lagi.
+
 **Catatan untuk platform PaaS (Coolify, CapRover, Railway, Vercel-like):** pastikan variabel
 `NEXT_PUBLIC_SUPABASE_URL` dan `NEXT_PUBLIC_SUPABASE_ANON_KEY` diisi di tab
 **Build Variables / Build-time Environment**, bukan hanya di Runtime Environment.
