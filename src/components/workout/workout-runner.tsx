@@ -39,6 +39,7 @@ import {
 } from '@/app/actions/workout-actions';
 import { requestScreenWakeLock, releaseScreenWakeLock } from '@/lib/wake-lock';
 import { MUSCLE_TRANSLATIONS, EQUIPMENT_TRANSLATIONS } from '@/lib/constants';
+import { saveWorkoutSnapshot, loadWorkoutSnapshot, findSnapshotUserId, type WorkoutSnapshot } from '@/lib/workout-cache';
 
 interface WorkoutExerciseState {
   exerciseId: string;
@@ -60,12 +61,17 @@ interface WorkoutRunnerProps {
   user: {
     id: string;
     name: string | null;
+    /** Ikut dikirim server (page mengirim utuh); opsional agar runner tetap aman saat offline */
+    email?: string;
+    weightUnit?: string;
     defaultRestTimer: number;
-  };
+  } | null;
   initialProgram: any | null;
   userPrograms: any[];
   availableExercises: ExerciseItem[];
   initialHistoryMap: Record<string, ExerciseHistoryInfo>;
+  /** false = server tidak terjangkau; runner memakai snapshot perangkat */
+  serverReachable?: boolean;
 }
 
 export function WorkoutRunner({
@@ -74,6 +80,7 @@ export function WorkoutRunner({
   userPrograms,
   availableExercises,
   initialHistoryMap,
+  serverReachable = true,
 }: WorkoutRunnerProps) {
   const router = useRouter();
 
@@ -127,7 +134,17 @@ export function WorkoutRunner({
     exists: false,
   });
 
-  const storageKey = `besilog_workout_draft_${user.id}`;
+  // Mode offline: server tidak terjangkau -> pakai snapshot perangkat.
+  const offlineUserId = user?.id ?? findSnapshotUserId();
+  const [snapshot] = useState<WorkoutSnapshot | null>(() =>
+    serverReachable ? null : offlineUserId ? loadWorkoutSnapshot(offlineUserId) : null
+  );
+  const isOffline = !serverReachable;
+
+  // Turunan aman: `user` boleh null saat offline (data dari snapshot perangkat).
+  const currentUser = user ?? snapshot?.user ?? null;
+  const restDefault = currentUser?.defaultRestTimer ?? 90;
+  const storageKey = `besilog_workout_draft_${currentUser?.id ?? 'offline'}`;
 
   // Helper membuat initial exercises dari program
   const createExercisesFromProgram = useCallback((prog: any) => {
@@ -169,7 +186,7 @@ export function WorkoutRunner({
         equipment: pe.exercise.equipment,
         weightIncrement,
         imageUrl: pe.exercise.imageUrl ?? null,
-        restSeconds: pe.restSeconds || user.defaultRestTimer || 90,
+        restSeconds: pe.restSeconds || restDefault || 90,
         targetRepMin: pe.targetRepMin,
         targetRepMax: pe.targetRepMax,
         targetSets: pe.targetSets,
@@ -178,10 +195,16 @@ export function WorkoutRunner({
         sets,
       };
     });
-  }, [initialHistoryMap, user.defaultRestTimer]);
+  }, [initialHistoryMap, restDefault]);
 
   // Check LocalStorage Draft on Mount
   useEffect(() => {
+    // Offline: server tak terjangkau -> inisialisasi dari snapshot perangkat.
+    if (isOffline) {
+      if (snapshot?.selectedProgram) setExercises(createExercisesFromProgram(snapshot.selectedProgram));
+      return;
+    }
+
     try {
       const savedDraft = localStorage.getItem(storageKey);
       if (savedDraft) {
@@ -205,7 +228,7 @@ export function WorkoutRunner({
     if (initialProgram) {
       setExercises(createExercisesFromProgram(initialProgram));
     }
-  }, [initialProgram, createExercisesFromProgram, storageKey]);
+  }, [initialProgram, createExercisesFromProgram, storageKey, isOffline, snapshot]);
 
   // Load draft function
   const handleLoadDraft = () => {
@@ -244,6 +267,23 @@ export function WorkoutRunner({
 
   // Auto-save draft ke localStorage setiap kali ada perubahan data sesi
   useEffect(() => {
+    // Simpan snapshot agar /workout bisa dibuka offline lain kali
+    if (user) {
+      saveWorkoutSnapshot(user.id, {
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email ?? '',
+          weightUnit: user.weightUnit ?? 'kg',
+          defaultRestTimer: user.defaultRestTimer,
+        },
+        selectedProgram: initialProgram,
+        userPrograms,
+        availableExercises,
+        historyMap: initialHistoryMap,
+      });
+    }
+
     if (exercises.length === 0) return;
     try {
       const draftPayload = {
@@ -258,7 +298,7 @@ export function WorkoutRunner({
     } catch {
       // ignore
     }
-  }, [sessionName, programId, startedAt, sessionNotes, exercises, storageKey]);
+  }, [sessionName, programId, startedAt, sessionNotes, exercises, storageKey, user, initialProgram, userPrograms, availableExercises, initialHistoryMap]);
 
   // Live Workout Timer & Screen Wake Lock
   useEffect(() => {
@@ -326,14 +366,14 @@ export function WorkoutRunner({
 
         // Jika set baru saja diselesaikan, jalankan Rest Timer
         if (newStatus) {
-          const restSec = targetEx.restSeconds || user.defaultRestTimer || 90;
+          const restSec = targetEx.restSeconds || restDefault || 90;
           setActiveRestTimer({ key: Date.now(), duration: restSec });
         }
 
         return next;
       });
     },
-    [user.defaultRestTimer]
+    [restDefault]
   );
 
   // Tambah set baru pada gerakan tertentu
@@ -456,7 +496,7 @@ export function WorkoutRunner({
         equipment: newEx.equipment,
         weightIncrement: newEx.weightIncrement || 2.5,
         imageUrl: newEx.imageUrl ?? null,
-        restSeconds: user.defaultRestTimer || 90,
+        restSeconds: restDefault || 90,
         historyInfo: history,
         sets,
       };
@@ -573,6 +613,12 @@ export function WorkoutRunner({
 
   return (
     <div className="pb-40 max-w-lg mx-auto" style={{ touchAction: 'pan-y' }}>
+      {isOffline && (
+        <div className="mb-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-200">
+          <strong>Mode offline</strong> — sesi tersimpan di perangkat dan dikirim otomatis saat online.
+        </div>
+      )}
+
       {/* Draft Recovery Banner */}
       {draftBanner.exists && (
         <div className="bg-amber-500/15 border border-amber-500/30 rounded-2xl p-3.5 mb-4 flex items-center justify-between gap-3 animate-in fade-in">

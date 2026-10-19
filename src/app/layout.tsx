@@ -8,6 +8,11 @@ export const metadata: Metadata = {
   title: 'Aniway - Gym Tracker Indonesia',
   description: 'Aplikasi pencatat latihan beban gym modern berbasis mesin & progressive overload',
   manifest: '/manifest.json',
+  appleWebApp: { capable: true, title: 'Aniway', statusBarStyle: 'black-translucent' },
+  icons: {
+    icon: ['/icon-192.png', '/icon-512.png'],
+    apple: '/apple-touch-icon.png',
+  },
 };
 
 export const viewport: Viewport = {

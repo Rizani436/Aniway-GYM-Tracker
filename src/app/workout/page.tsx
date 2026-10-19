@@ -1,6 +1,7 @@
 import { getWorkoutInitialDataAction } from '@/app/actions/workout-actions';
 import { WorkoutRunner } from '@/components/workout/workout-runner';
-import { redirect } from 'next/navigation';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: 'Mode Workout Aktif | Aniway',
@@ -8,32 +9,25 @@ export const metadata = {
 };
 
 interface PageProps {
-  searchParams: Promise<{
-    programId?: string;
-    repeatSessionId?: string;
-  }>;
+  searchParams: Promise<{ programId?: string; repeatSessionId?: string }>;
 }
 
 export default async function WorkoutPage({ searchParams }: PageProps) {
-  const resolvedParams = await searchParams;
-  const programId = resolvedParams.programId;
-  const repeatSessionId = resolvedParams.repeatSessionId;
+  const { programId, repeatSessionId } = await searchParams;
 
-  let initialData;
-  try {
-    initialData = await getWorkoutInitialDataAction(programId, repeatSessionId);
-  } catch {
-    redirect('/login');
-  }
+  // JANGAN redirect ke /login saat gagal: halaman ini harus tetap tampil offline
+  // (tempat gym sering tanpa sinyal). Runner akan memakai snapshot perangkat.
+  const initialData = await getWorkoutInitialDataAction(programId, repeatSessionId).catch(() => null);
 
   return (
     <main className="min-h-[100dvh] bg-[#08090a] text-[#f7f8f8] px-4 pt-[max(0.5rem,env(safe-area-inset-top))]">
       <WorkoutRunner
-        user={initialData.user}
-        initialProgram={initialData.selectedProgram}
-        userPrograms={initialData.userPrograms}
-        availableExercises={initialData.availableExercises as any}
-        initialHistoryMap={initialData.historyMap}
+        user={initialData?.user ?? null}
+        initialProgram={initialData?.selectedProgram ?? null}
+        userPrograms={initialData?.userPrograms ?? []}
+        availableExercises={(initialData?.availableExercises ?? []) as any}
+        initialHistoryMap={initialData?.historyMap ?? {}}
+        serverReachable={initialData !== null}
       />
     </main>
   );
