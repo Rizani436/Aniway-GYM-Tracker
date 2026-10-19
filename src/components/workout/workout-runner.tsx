@@ -237,6 +237,25 @@ export function WorkoutRunner({
       return;
     }
 
+    // Jika user membuka /workout dengan programId eksplisit di URL, program
+    // MENANG atas draft: maksudnya jelas "mulai sesi dari program ini",
+    // bukan melanjutkan draft lama (yang mungkin kosong/salah isi).
+    if (initialProgram?.id) {
+      try {
+        const stale = localStorage.getItem(storageKey);
+        if (stale) {
+          const p = JSON.parse(stale);
+          if (p?.programId !== initialProgram.id) localStorage.removeItem(storageKey);
+        }
+      } catch {
+        // ignore
+      }
+      setDraftBanner({ exists: false });
+      setSessionName(initialProgram.name);
+      setExercises(createExercisesFromProgram(initialProgram));
+      return;
+    }
+
     try {
       const savedDraft = localStorage.getItem(storageKey);
       if (savedDraft) {

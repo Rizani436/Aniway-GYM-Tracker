@@ -107,15 +107,21 @@ export async function getWorkoutInitialDataAction(
   }
 
   // 5. Query riwayat sesi terakhir & best 1RM untuk setiap gerakan relevan secara paralel
+  // Batasi paralelisme (chunk 8) — via WARP/pooler, terlalu banyak koneksi paralel
+  // bikin koneksi gagal/timeout dan halaman workout terasa sangat lambat.
   const historyMap: Record<string, ExerciseHistoryInfo> = {};
-
-  await Promise.all(
-    Array.from(relevantExerciseIds).map(async (exId) => {
-      const targetRepMax = selectedProgram?.exercises.find((pe) => pe.exerciseId === exId)?.targetRepMax;
-      const history = await getExerciseHistoryForUser(user.id, exId, targetRepMax);
-      historyMap[exId] = history;
-    })
-  );
+  const relevantIds = Array.from(relevantExerciseIds);
+  const CHUNK = 8;
+  for (let i = 0; i < relevantIds.length; i += CHUNK) {
+    const chunk = relevantIds.slice(i, i + CHUNK);
+    await Promise.all(
+      chunk.map(async (exId) => {
+        const targetRepMax = selectedProgram?.exercises.find((pe) => pe.exerciseId === exId)?.targetRepMax;
+        const history = await getExerciseHistoryForUser(user.id, exId, targetRepMax);
+        historyMap[exId] = history;
+      })
+    );
+  }
 
   return {
     user: {
