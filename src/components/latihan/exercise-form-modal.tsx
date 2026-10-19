@@ -361,7 +361,7 @@ export function ExerciseFormModal({
                       try {
                         if (!userId)
                           throw new Error(
-                            'Sesi tidak ditemukan, coba muat ulang halaman.'
+                            'Sesi login tidak terbaca. Muat ulang halaman lalu coba lagi.'
                           );
                         const url = await uploadExerciseImage(file, userId);
                         setImageUrl(url);
