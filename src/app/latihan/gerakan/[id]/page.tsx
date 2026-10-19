@@ -20,10 +20,13 @@ export default async function ExerciseDetailPage({
     // userId diperlukan modal edit gerakan agar bisa upload foto ke Supabase Storage
     // (path objek = <userId>/<timestamp>.<ext>). Tanpa ini, tombol "Pilih Foto"
     // ditolak sebelum sempat mengunggah.
+    // .catch(() => null): DB sering putus sesaat — kegagalan mengambil user TIDAK
+    // boleh melempar ke catch halaman, karena catch di sini menghasilkan notFound()
+    // sehingga halaman gerakan jadi 404 padahal datanya ada.
     const [exercise, progress, user] = await Promise.all([
       getExerciseByIdAction(id),
       getExerciseProgressAction(id).catch(() => [] as ProgressPoint[]),
-      getAuthenticatedUser(),
+      getAuthenticatedUser().catch(() => null),
     ]);
     return (
       <main className="min-h-screen bg-zinc-950 text-zinc-100 pb-28 max-w-md mx-auto px-4 pt-5">

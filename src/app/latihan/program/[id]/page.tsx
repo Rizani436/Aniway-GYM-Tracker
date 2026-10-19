@@ -19,7 +19,9 @@ export default async function ProgramDetailPage({
     const [program, allExercises, user] = await Promise.all([
       getProgramByIdAction(id),
       getExercisesAction(false),
-      getAuthenticatedUser(),
+      // .catch(() => null): sama seperti halaman detail gerakan — kegagalan sesaat
+      // mengambil user tidak boleh membuat halaman program jadi 404.
+      getAuthenticatedUser().catch(() => null),
     ]);
 
     return (
