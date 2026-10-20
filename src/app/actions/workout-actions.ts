@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/supabase/server';
 import { saveWorkoutSessionSchema, type SaveWorkoutSessionInput } from '@/lib/validations';
+import { allWithDbRetry, withDbRetry } from '@/lib/db-retry';
 import { SetType } from '@prisma/client';
 
 async function requireUser() {
@@ -39,26 +40,63 @@ export async function getWorkoutInitialDataAction(
 ) {
   const user = await requireUser();
 
-  // Semua query dijalankan paralel sekaligus (1 kali round-trip jaringan, bukan berurutan)
-  const [userPrograms, availableExercises] = await Promise.all([
+  // Semua query dijalankan paralel sekaligus (1 kali round-trip jaringan, bukan berurutan).
+  // Dibungkus retry: kegagalan KONEKSI (P1001/P2024) cukup diulang dan biasanya
+  // berhasil — operasi ini murni BACA, jadi aman diulang.
+  const [userPrograms, availableExercises] = await allWithDbRetry([
     // 1. Seluruh program aktif user untuk opsi ganti/mulai program
-    prisma.program.findMany({
+    () =>
+      prisma.program.findMany({
       where: { userId: user.id, isArchived: false },
       orderBy: { sortOrder: 'asc' },
       include: {
         exercises: {
           orderBy: { sortOrder: 'asc' },
-          include: { exercise: true },
+          select: {
+            exerciseId: true,
+            targetSets: true,
+            targetRepMin: true,
+            targetRepMax: true,
+            restSeconds: true,
+            notes: true,
+            // Runner hanya memakai 5 kolom exercise (lihat createExercisesFromProgram);
+            // steps/tips/commonMistakes tidak pernah dibaca di /workout.
+            exercise: {
+              select: {
+                name: true,
+                primaryMuscle: true,
+                equipment: true,
+                weightIncrement: true,
+                imageUrl: true,
+              },
+            },
+          },
         },
       },
     }),
-    // 2. Seluruh pustaka gerakan untuk modal ganti/tambah alat
-    prisma.exercise.findMany({
+    // 2. Pustaka gerakan untuk modal ganti/tambah alat — HANYA kolom yang dipakai UI.
+    //
+    // Kenapa `select` dan bukan `findMany` polos: tabel penuh berisi 140 baris x
+    // (steps + tips + commonMistakes + alternatives + secondaryMuscles) = ~200 KB.
+    // Terukur di pooler yang jauh: 7848 ms (penuh) vs 624 ms (hanya 6 kolom yang
+    // dipakai) — bagian ini sendirian mendominasi waktu muat /workout.
+    // Modal hanya merujuk: id, name, primaryMuscle, equipment, weightIncrement, imageUrl.
+    // Konten langkah/tips TETAP diambil di halaman detail gerakan (getExerciseByIdAction).
+    () =>
+      prisma.exercise.findMany({
       where: {
         isArchived: false,
         OR: [{ userId: null }, { userId: user.id }],
       },
       orderBy: [{ primaryMuscle: 'asc' }, { name: 'asc' }],
+      select: {
+        id: true,
+        name: true,
+        primaryMuscle: true,
+        equipment: true,
+        weightIncrement: true,
+        imageUrl: true,
+      },
     }),
   ]);
 
@@ -68,15 +106,35 @@ export async function getWorkoutInitialDataAction(
     // "Program sintetis" dari sesi terakhir: bentuk object ber-shape Program
     // (program + ProgramExercise include exercise) agar mapping state di
     // WorkoutRunner (createExercisesFromProgram) bekerja tanpa diubah.
-    const src = await prisma.workoutSession.findFirst({
+    const src = await withDbRetry(() =>
+      prisma.workoutSession.findFirst({
       where: { id: repeatSessionId, userId: user.id, isCompleted: true },
       include: {
         exercises: {
           orderBy: { sortOrder: 'asc' },
-          include: { exercise: true, sets: { orderBy: { setNumber: 'asc' } } },
+          // select, bukan include penuh: konten langkah/tips tidak dipakai runner,
+          // dan `include: { exercise: true }` di sini ikut menarik semua kolom berat
+          // untuk setiap gerakan sesi.
+          select: {
+            id: true,
+            exerciseId: true,
+            restSeconds: true,
+            notes: true,
+            exercise: {
+              select: {
+                name: true,
+                primaryMuscle: true,
+                equipment: true,
+                weightIncrement: true,
+                imageUrl: true,
+              },
+            },
+            sets: { orderBy: { setNumber: 'asc' }, select: { reps: true, setType: true } },
+          },
         },
       },
-    });
+      })
+    );
     if (!src) throw new Error('Sesi yang ingin diulang tidak ditemukan.');
 
     selectedProgram = {
@@ -123,19 +181,28 @@ export async function getWorkoutInitialDataAction(
   const relevantIds = Array.from(relevantExerciseIds).slice(0, MAX_PRELOAD);
   const historyMap: Record<string, ExerciseHistoryInfo> = {};
 
+  // Jendela waktu: prefill/chip "Rata" hanya butuh sesi TERBARU. Tanpa batas
+  // waktu, query riwayat menarik seluruh riwayat user lalu memotongnya dengan
+  // `take` — makin lama dipakai makin berat. 120 hari cukup untuk prefill dan
+  // menjaga waktu muat tetap datar.
+  const HISTORY_WINDOW_DAYS = 120;
+  const windowStart = new Date(Date.now() - HISTORY_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+
   if (relevantIds.length > 0) {
     // TIGA query tetap untuk SEMUA gerakan:
     //   A. sesi terakhir + beberapa sesi terakhir per gerakan (dengan set)
-    //   B. best 1RM per gerakan (groupBy)
+    //   B. best 1RM per gerakan (groupBy)  — TANPA jendela waktu: PR seumur latihan
     //   C. sesi yang punya catatan (khusus riwayat catatan)
     // Query catatan dipisah supaya gerakan yang rajin dicatat tidak "memakan"
     // jatah baris query A (dan sebaliknya).
-    const [recentRows, bestRows, noteRows] = await Promise.all([
-      prisma.sessionExercise.findMany({
+    const [recentRows, bestRows, noteRows] = await allWithDbRetry([
+      () =>
+        prisma.sessionExercise.findMany({
         where: {
           userId: user.id,
           exerciseId: { in: relevantIds },
           workoutSession: { isCompleted: true },
+          performedAt: { gte: windowStart },
         },
         orderBy: { performedAt: 'desc' },
         // Anggaran baris global (bukan per gerakan). Cukup longgar untuk program
@@ -150,17 +217,20 @@ export async function getWorkoutInitialDataAction(
           },
         },
       }),
-      prisma.setLog.groupBy({
+      () =>
+        prisma.setLog.groupBy({
         by: ['exerciseId'],
         where: { userId: user.id, exerciseId: { in: relevantIds }, isCompleted: true },
         _max: { estimated1RM: true },
       }),
-      prisma.sessionExercise.findMany({
+      () =>
+        prisma.sessionExercise.findMany({
         where: {
           userId: user.id,
           exerciseId: { in: relevantIds },
           notes: { not: null },
           workoutSession: { isCompleted: true },
+          performedAt: { gte: windowStart },
         },
         orderBy: { performedAt: 'desc' },
         take: MAX_PRELOAD * 5,
