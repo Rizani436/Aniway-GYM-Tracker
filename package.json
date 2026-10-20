@@ -10,7 +10,9 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "check:updaters": "node scripts/check-pure-updaters.cjs",
+    "test:workout": "node scripts/check-pure-updaters.cjs && node scripts/test-pure-updater-behavior.cjs && node scripts/test-rest-timer-add.cjs && node scripts/test-workout-accordion.cjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

@@ -95,6 +95,12 @@ export function WorkoutRunner({
   const [startedAt, setStartedAt] = useState<string>(new Date().toISOString());
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [exercises, setExercises] = useState<WorkoutExerciseState[]>([]);
+  // Cermin state exercises: dipakai handler untuk membaca status TERBARU tanpa
+  // harus bergantung pada state di dependency useCallback (kalau depend,
+  // identitas callback berubah tiap ketikan -> ExerciseSetRow yang di-memo
+  // ikut re-render). Ref selalu berisi nilai render terakhir.
+  const exercisesRef = useRef<WorkoutExerciseState[]>(exercises);
+  exercisesRef.current = exercises;
   const [sessionNotes, setSessionNotes] = useState('');
   const [isProgramPickerOpen, setIsProgramPickerOpen] = useState(false);
 
@@ -443,27 +449,41 @@ export function WorkoutRunner({
   }, []);
 
   // Handler centang set selesai -> Picu Timer Istirahat
+  //
+  // PENTING: setActiveRestTimer TIDAK boleh dipanggil di dalam updater
+  // setExercises((prev) => ...). Updater React harus murni — React boleh
+  // menjalankan ulang atau membuang hasilnya (StrictMode bahkan sengaja
+  // memanggilnya dua kali saat development), sehingga efek samping di dalamnya
+  // kadang jalan kadang hilang: timer istirahat jadi kadang muncul kadang tidak.
+  // Karena itu status dibaca lewat ref (identitas callback tetap stabil agar
+  // ExerciseSetRow yang di-memo tidak ikut re-render), lalu efek sampingnya
+  // dijalankan di luar updater.
   const handleToggleComplete = useCallback(
     (exerciseIndex: number, setIndex: number) => {
+      const targetEx = exercisesRef.current[exerciseIndex];
+      const set = targetEx?.sets?.[setIndex];
+      if (!targetEx || !set) return;
+
+      const baruSelesai = !set.isCompleted;
+
       setExercises((prev) => {
         const next = [...prev];
-        const targetEx = { ...next[exerciseIndex] };
-        const nextSets = [...targetEx.sets];
-        const currentStatus = nextSets[setIndex].isCompleted;
-        const newStatus = !currentStatus;
-
-        nextSets[setIndex] = { ...nextSets[setIndex], isCompleted: newStatus };
-        targetEx.sets = nextSets;
-        next[exerciseIndex] = targetEx;
-
-        // Jika set baru saja diselesaikan, jalankan Rest Timer
-        if (newStatus) {
-          const restSec = targetEx.restSeconds || restDefault || 90;
-          setActiveRestTimer({ key: Date.now(), duration: restSec });
-        }
-
+        const ex = { ...next[exerciseIndex] };
+        const nextSets = [...ex.sets];
+        nextSets[setIndex] = {
+          ...nextSets[setIndex],
+          isCompleted: !nextSets[setIndex].isCompleted,
+        };
+        ex.sets = nextSets;
+        next[exerciseIndex] = ex;
         return next;
       });
+
+      // Efek samping di LUAR updater: mulai timer istirahat saat set baru selesai
+      if (baruSelesai) {
+        const restSec = targetEx.restSeconds || restDefault || 90;
+        setActiveRestTimer({ key: Date.now(), duration: restSec });
+      }
     },
     [restDefault]
   );
