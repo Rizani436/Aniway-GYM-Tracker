@@ -106,21 +106,158 @@ export async function getWorkoutInitialDataAction(
     selectedProgram.exercises.forEach((pe) => relevantExerciseIds.add(pe.exerciseId));
   }
 
-  // 5. Query riwayat sesi terakhir & best 1RM untuk setiap gerakan relevan secara paralel
-  // Batasi paralelisme (chunk 8) — via WARP/pooler, terlalu banyak koneksi paralel
-  // bikin koneksi gagal/timeout dan halaman workout terasa sangat lambat.
+  // 5. Riwayat gerakan: DUA query tetap untuk SEMUA gerakan sekaligus.
+  //
+  // Sebelumnya: 4 query per gerakan (findFirst + aggregate + 2 findMany), dijalankan
+  // per chunk 8. Untuk program 8 gerakan itu 32 query; program + pustaka saja sudah
+  // ~4 detik pada pooler yang jauh, sehingga bagian riwayat ini tembus batas koneksi
+  // 5 detik -> P1001 -> action GAGAL -> halaman /workout menelannya lewat
+  // `.catch(() => null)` -> runner masuk mode offline -> daftar gerakan KOSONG
+  // ("Belum Ada Gerakan") walau program jelas ada. Terukur: 5/5 percobaan gagal
+  // di ~5030 ms; dengan 2 query gabungan jadi ~2.1 detik.
+  //
+  // Kenapa aman digabung: kita membatasi jumlah gerakan yang di-preload (MAX_PRELOAD)
+  // dan memakai take per-gerakan saat menyusun peta, jadi perilakunya tetap sama
+  // untuk program normal.
+  const MAX_PRELOAD = 24;
+  const relevantIds = Array.from(relevantExerciseIds).slice(0, MAX_PRELOAD);
   const historyMap: Record<string, ExerciseHistoryInfo> = {};
-  const relevantIds = Array.from(relevantExerciseIds);
-  const CHUNK = 8;
-  for (let i = 0; i < relevantIds.length; i += CHUNK) {
-    const chunk = relevantIds.slice(i, i + CHUNK);
-    await Promise.all(
-      chunk.map(async (exId) => {
-        const targetRepMax = selectedProgram?.exercises.find((pe) => pe.exerciseId === exId)?.targetRepMax;
-        const history = await getExerciseHistoryForUser(user.id, exId, targetRepMax);
-        historyMap[exId] = history;
-      })
+
+  if (relevantIds.length > 0) {
+    // TIGA query tetap untuk SEMUA gerakan:
+    //   A. sesi terakhir + beberapa sesi terakhir per gerakan (dengan set)
+    //   B. best 1RM per gerakan (groupBy)
+    //   C. sesi yang punya catatan (khusus riwayat catatan)
+    // Query catatan dipisah supaya gerakan yang rajin dicatat tidak "memakan"
+    // jatah baris query A (dan sebaliknya).
+    const [recentRows, bestRows, noteRows] = await Promise.all([
+      prisma.sessionExercise.findMany({
+        where: {
+          userId: user.id,
+          exerciseId: { in: relevantIds },
+          workoutSession: { isCompleted: true },
+        },
+        orderBy: { performedAt: 'desc' },
+        // Anggaran baris global (bukan per gerakan). Cukup longgar untuk program
+        // normal; kalau kelewat, sebagian gerakan hanya kehilangan prefill.
+        take: MAX_PRELOAD * 4,
+        select: {
+          exerciseId: true,
+          performedAt: true,
+          sets: {
+            orderBy: { setNumber: 'asc' },
+            select: { setNumber: true, weight: true, reps: true, setType: true, isCompleted: true },
+          },
+        },
+      }),
+      prisma.setLog.groupBy({
+        by: ['exerciseId'],
+        where: { userId: user.id, exerciseId: { in: relevantIds }, isCompleted: true },
+        _max: { estimated1RM: true },
+      }),
+      prisma.sessionExercise.findMany({
+        where: {
+          userId: user.id,
+          exerciseId: { in: relevantIds },
+          notes: { not: null },
+          workoutSession: { isCompleted: true },
+        },
+        orderBy: { performedAt: 'desc' },
+        take: MAX_PRELOAD * 5,
+        select: { exerciseId: true, performedAt: true, notes: true },
+      }),
+    ]);
+
+    const bestMap = new Map(bestRows.map((r) => [r.exerciseId, r._max.estimated1RM || 0]));
+    const rowsPerExercise = new Map<string, typeof recentRows>();
+    for (const row of recentRows) {
+      const list = rowsPerExercise.get(row.exerciseId) ?? [];
+      list.push(row);
+      rowsPerExercise.set(row.exerciseId, list);
+    }
+    const notesPerExercise = new Map<string, typeof noteRows>();
+    for (const row of noteRows) {
+      const list = notesPerExercise.get(row.exerciseId) ?? [];
+      list.push(row);
+      notesPerExercise.set(row.exerciseId, list);
+    }
+
+    // weightIncrement sudah tersedia dari selectedProgram (pe.exercise.weightIncrement),
+    // jadi tidak perlu query `exercise` tambahan.
+    const incrementMap = new Map(
+      (selectedProgram?.exercises ?? []).map((pe) => [pe.exerciseId, pe.exercise?.weightIncrement || 2.5])
     );
+
+    for (const exId of relevantIds) {
+      const rows = (rowsPerExercise.get(exId) ?? []).slice(0, 3); // 3 sesi terakhir
+      const last = rows[0];
+      const targetRepMax = selectedProgram?.exercises.find((pe) => pe.exerciseId === exId)?.targetRepMax;
+      const best1RM = bestMap.get(exId) ?? 0;
+
+      // Riwayat catatan: buang entri kosong/spasi saja, batasi 5 terbaru
+      // (sama seperti perilaku lama).
+      const noteHistory = (notesPerExercise.get(exId) ?? [])
+        .map((r) => ({ date: r.performedAt, notes: (r.notes || '').trim() }))
+        .filter((n) => n.notes.length > 0)
+        .slice(0, 5);
+
+      if (!last) {
+        historyMap[exId] = {
+          lastSessionDate: null,
+          previousSets: [],
+          best1RM,
+          progressiveOverloadSuggestion: null,
+          avgSets: [],
+          noteHistory,
+        };
+        continue;
+      }
+
+      const previousSets = last.sets.map((s) => ({
+        setNumber: s.setNumber,
+        weight: s.weight,
+        reps: s.reps,
+        setType: s.setType,
+        isCompleted: s.isCompleted,
+      }));
+
+      // Progressive overload: semua set kerja sesi terakhir mencapai targetRepMax
+      let progressiveOverloadSuggestion: ExerciseHistoryInfo['progressiveOverloadSuggestion'] = null;
+      if (targetRepMax && targetRepMax > 0 && previousSets.length > 0) {
+        const workSets = previousSets.filter((s) => s.isCompleted && s.setType !== SetType.WARMUP);
+        if (workSets.length > 0 && workSets.every((s) => s.reps >= targetRepMax)) {
+          const inc = incrementMap.get(exId) ?? 2.5;
+          progressiveOverloadSuggestion = {
+            suggestedWeightIncrement: inc,
+            reason: `Semua ${workSets.length} set sesi lalu tembus target (${targetRepMax} rep). Naikkan beban +${inc} kg hari ini!`,
+          };
+        }
+      }
+
+      // Rata-rata per posisi set dari 3 sesi terakhir (set kerja selesai, reps > 0).
+      // Array boleh berisi null per posisi — sama seperti perilaku lama.
+      const kerjaPerSesi = rows.map((r) =>
+        r.sets.filter((s) => s.isCompleted && s.setType !== SetType.WARMUP && s.reps > 0)
+      );
+      const maxSetCount = kerjaPerSesi.length ? Math.max(...kerjaPerSesi.map((s) => s.length)) : 0;
+      const avgSets: ExerciseHistoryInfo['avgSets'] = Array.from({ length: maxSetCount }, (_, i) => {
+        const atPos = kerjaPerSesi.map((sets) => sets[i]).filter((s): s is NonNullable<typeof s> => !!s);
+        if (!atPos.length) return null;
+        return {
+          weight: Math.round((atPos.reduce((a, s) => a + s.weight, 0) / atPos.length) * 10) / 10,
+          reps: Math.round(atPos.reduce((a, s) => a + s.reps, 0) / atPos.length),
+        };
+      });
+
+      historyMap[exId] = {
+        lastSessionDate: last.performedAt,
+        previousSets,
+        best1RM,
+        progressiveOverloadSuggestion,
+        avgSets,
+        noteHistory,
+      };
+    }
   }
 
   return {

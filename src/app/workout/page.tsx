@@ -17,7 +17,29 @@ export default async function WorkoutPage({ searchParams }: PageProps) {
 
   // JANGAN redirect ke /login saat gagal: halaman ini harus tetap tampil offline
   // (tempat gym sering tanpa sinyal). Runner akan memakai snapshot perangkat.
-  const initialData = await getWorkoutInitialDataAction(programId, repeatSessionId).catch(() => null);
+  //
+  // TAPI dua sebab kegagalan harus dibedakan, karena gejalanya dulu tertukar:
+  //  - benar-benar offline -> snapshot perangkat dipakai (wajar, tanpa pesan)
+  //  - server/DB gagal (mis. query timeout P1001) -> JANGAN diam-diam tampilkan
+  //    "Belum Ada Gerakan". Dulu itu yang terjadi: user membuka program dari URL,
+  //    programnya jelas berisi 5-10 gerakan, tapi yang muncul kotak kosong —
+  //    karena action gagal, halaman menelan error, runner masuk mode offline, dan
+  //    snapshot perangkat kosong. Sekarang kegagalan server dikirim eksplisit
+  //    (`initFailed`) supaya runner menampilkan pesan jujur + tombol coba lagi.
+  let initialData: Awaited<ReturnType<typeof getWorkoutInitialDataAction>> | null = null;
+  let initFailed = false;
+  try {
+    initialData = await getWorkoutInitialDataAction(programId, repeatSessionId);
+  } catch (err) {
+    initFailed = true;
+    console.error(
+      '[workout] gagal memuat data awal:',
+      (err as { code?: string })?.code || '',
+      (err as Error)?.message || err
+    );
+  }
+
+  const serverReachable = !initFailed;
 
   return (
     <main className="min-h-[100dvh] bg-[#08090a] text-[#f7f8f8] px-4 pt-[max(0.5rem,env(safe-area-inset-top))]">
@@ -27,7 +49,9 @@ export default async function WorkoutPage({ searchParams }: PageProps) {
         userPrograms={initialData?.userPrograms ?? []}
         availableExercises={(initialData?.availableExercises ?? []) as any}
         initialHistoryMap={initialData?.historyMap ?? {}}
-        serverReachable={initialData !== null}
+        serverReachable={serverReachable}
+        initFailed={initFailed}
+        requestedProgramId={programId ?? null}
       />
     </main>
   );

@@ -75,6 +75,10 @@ interface WorkoutRunnerProps {
   initialHistoryMap: Record<string, ExerciseHistoryInfo>;
   /** false = server tidak terjangkau; runner memakai snapshot perangkat */
   serverReachable?: boolean;
+  /** true = server TERJANGKAU tapi gagal memuat data (DB timeout dll) */
+  initFailed?: boolean;
+  /** programId dari URL — dipakai untuk pesan pemulihan yang tepat */
+  requestedProgramId?: string | null;
 }
 
 export function WorkoutRunner({
@@ -84,6 +88,8 @@ export function WorkoutRunner({
   availableExercises,
   initialHistoryMap,
   serverReachable = true,
+  initFailed = false,
+  requestedProgramId = null,
 }: WorkoutRunnerProps) {
   const router = useRouter();
 
@@ -257,9 +263,18 @@ export function WorkoutRunner({
 
   // Check LocalStorage Draft on Mount
   useEffect(() => {
-    // Offline: server tak terjangkau -> inisialisasi dari snapshot perangkat.
+    // Server tak terjangkau ATAU gagal memuat -> coba pulihkan dari snapshot perangkat.
     if (isOffline) {
-      if (snapshot?.selectedProgram) setExercises(createExercisesFromProgram(snapshot.selectedProgram));
+      const snapProg = (snapshot?.selectedProgram as { id?: string | null; name?: string } | null) ?? null;
+      // Penjaga penting: kalau user MEMINTA program tertentu (programId di URL) tapi
+      // snapshot berisi program LAIN, jangan pakai — itu akan menampilkan daftar
+      // gerakan yang salah tanpa peringatan. Lebih baik tampilkan pesan gagal-muat.
+      const cocok = !requestedProgramId || (!!snapProg?.id && snapProg.id === requestedProgramId);
+      if (snapshot?.selectedProgram && cocok) {
+        if (snapProg?.name) setSessionName(snapProg.name);
+        setProgramId(snapProg?.id ?? null);
+        setExercises(createExercisesFromProgram(snapshot.selectedProgram));
+      }
       return;
     }
 
@@ -908,7 +923,33 @@ export function WorkoutRunner({
 
       {/* Daftar Gerakan Latihan */}
       <div className="space-y-4">
-        {exercises.length === 0 ? (
+        {exercises.length === 0 && initFailed ? (
+          /* Server terjangkau TAPI gagal memuat (mis. query timeout P1001).
+             Dulu di sini muncul "Belum Ada Gerakan" — menyesatkan: program user
+             jelas berisi gerakan, yang gagal hanya pemuatannya. Tampilkan pesan
+             jujur + tombol coba lagi, jangan kotak kosong. */
+          <div className="bg-amber-500/[0.06] border border-amber-500/25 rounded-3xl p-6 text-center space-y-3">
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center mx-auto text-amber-400">
+              <AlertCircle className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="font-bold text-amber-200 text-base">Gagal Memuat Gerakan</h3>
+              <p className="text-xs text-amber-200/80 max-w-sm mx-auto mt-1 leading-relaxed">
+                {requestedProgramId
+                  ? 'Program kamu tidak hilang — server gagal memuat datanya (koneksi database lambat). Coba muat ulang halaman.'
+                  : 'Server gagal memuat data latihan. Coba muat ulang halaman.'}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => router.refresh()}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-amber-500 text-zinc-950 font-bold rounded-xl text-xs hover:bg-amber-400 active:scale-95 transition-all"
+            >
+              <RotateCcw className="w-4 h-4 stroke-[2.5]" />
+              Muat Ulang Halaman
+            </button>
+          </div>
+        ) : exercises.length === 0 ? (
           <div className="bg-white/[0.02] border border-dashed border-white/[0.08] rounded-3xl p-8 text-center space-y-3">
             <div className="w-12 h-12 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center mx-auto text-zinc-400">
               <Dumbbell className="w-6 h-6" />
