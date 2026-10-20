@@ -98,6 +98,25 @@ export function WorkoutRunner({
   const [sessionNotes, setSessionNotes] = useState('');
   const [isProgramPickerOpen, setIsProgramPickerOpen] = useState(false);
 
+  // Lipatan kartu gerakan. null = mode otomatis (mengikuti gerakan yang sedang
+  // dikerjakan). Angka >= 0 = pilihan manual user. -1 = semua dilipat manual,
+  // supaya tidak langsung dibuka ulang oleh mode otomatis.
+  const [openCardIdx, setOpenCardIdx] = useState<number | null>(null);
+
+  // Kartu yang otomatis terbuka = gerakan pertama yang setnya belum tuntas semua.
+  // Begitu set terakhir dicentang, kartu berikutnya terbuka sendiri.
+  const autoOpenCardIdx = exercises.findIndex((ex) =>
+    ex.sets.some((s) => !s.isCompleted)
+  );
+  const expandedCardIdx =
+    openCardIdx === null
+      ? autoOpenCardIdx >= 0
+        ? autoOpenCardIdx
+        : null
+      : openCardIdx;
+  const toggleCard = (idx: number) =>
+    setOpenCardIdx(expandedCardIdx === idx ? -1 : idx);
+
   // Pilih program: ganti seluruh gerakan sesuai isi program terpilih.
   // Kenapa bukan cuma set programId: workout harus ikut terisi gerakan program
   // (set, target reps, rest, prefill riwayat) — bukan cuma label.
@@ -119,6 +138,7 @@ export function WorkoutRunner({
     setExercises(createExercisesFromProgram(prog));
     setStartedAt(new Date().toISOString());
     setElapsedSeconds(0);
+    setOpenCardIdx(null); // kembali ke mode otomatis: buka gerakan pertama
     setIsProgramPickerOpen(false);
   };
 
@@ -292,6 +312,7 @@ export function WorkoutRunner({
         setStartedAt(parsed.startedAt || new Date().toISOString());
         setSessionNotes(parsed.sessionNotes || '');
         setExercises(parsed.exercises || []);
+        setOpenCardIdx(null); // kembali ke mode otomatis: ikuti gerakan aktif
 
         // Recalculate elapsed seconds
         const diff = Math.floor((Date.now() - new Date(parsed.startedAt).getTime()) / 1000);
@@ -893,39 +914,46 @@ export function WorkoutRunner({
             </button>
           </div>
         ) : (
-          exercises.map((ex, exIndex) => (
+          exercises.map((ex, exIndex) => {
+            // Status ringkas untuk header (dipakai saat kartu terlipat)
+            const doneSets = ex.sets.filter((s) => s.isCompleted).length;
+            const totalSets = ex.sets.length;
+            const allDone = totalSets > 0 && doneSets === totalSets;
+            const isExpanded = expandedCardIdx === exIndex;
+            return (
             <div
               key={`${ex.exerciseId}_${exIndex}`}
-              className="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-3.5 shadow-sm space-y-3"
+              className={cn(
+                'bg-white/[0.03] border rounded-2xl shadow-sm transition-colors',
+                isExpanded
+                  ? 'border-white/[0.07] p-3.5 space-y-3'
+                  : 'border-white/[0.05] p-2.5 space-y-2'
+              )}
             >
-              {/* Exercise Card Header */}
+              {/* Exercise Card Header — tap untuk buka/tutup kartu */}
               <div className="flex items-start justify-between gap-2">
-                <div className="flex items-start gap-2.5 min-w-0">
+                <button
+                  type="button"
+                  onClick={() => toggleCard(exIndex)}
+                  aria-expanded={isExpanded}
+                  className="flex items-start gap-2.5 min-w-0 flex-1 text-left active:opacity-80 transition-opacity"
+                >
                   {ex.imageUrl && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setExpandedImageIdx(
-                          expandedImageIdx === exIndex ? null : exIndex
-                        )
-                      }
-                      className="relative w-11 h-14 rounded-xl overflow-hidden border border-white/[0.1] bg-[#0f1011] shrink-0 active:scale-95 transition-transform"
-                      aria-label={`Lihat cara gerakan ${ex.name}`}
-                    >
+                    <span className="relative w-11 h-14 rounded-xl overflow-hidden border border-white/[0.1] bg-[#0f1011] shrink-0 block">
                       <img
                         src={ex.imageUrl}
                         alt={ex.name}
                         loading="lazy"
                         className="w-full h-full object-contain"
                       />
-                      <span className="absolute bottom-0 inset-x-0 bg-black/70 text-[9px] font-semibold text-zinc-200 text-center py-0.5 tracking-wide">
-                        {expandedImageIdx === exIndex ? 'Tutup' : 'Cara'}
-                      </span>
-                    </button>
+                    </span>
                   )}
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <h3 className="font-bold text-white text-sm">{ex.name}</h3>
+                    {allDone && (
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    )}
                   </div>
                   <div className="flex items-center gap-1.5 mt-1 flex-wrap text-[11px] text-zinc-400">
                     <span className="text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 font-medium">
@@ -949,24 +977,57 @@ export function WorkoutRunner({
                         <span aria-hidden="true">•</span>
                         <span
                           className={`font-mono whitespace-nowrap px-1.5 py-0.5 rounded border ${
-                            ex.sets.filter((s) => s.isCompleted).length >= ex.targetSets
+                            allDone || doneSets >= ex.targetSets
                               ? 'text-emerald-400 border-emerald-500/20 bg-emerald-500/10'
                               : 'text-zinc-400 border-white/[0.08] bg-white/[0.04]'
                           }`}
                         >
-                          {ex.sets.filter((s) => s.isCompleted).length}/{ex.targetSets}×
+                          {doneSets}/{ex.targetSets}×
                           {ex.targetRepMin && ex.targetRepMax
                             ? `${ex.targetRepMin}–${ex.targetRepMax}`
                             : (ex.targetRepMax ?? 10)}
                         </span>
                       </>
                     )}
+                    {/* Saat kartu terlipat, tampilkan ringkasan set agar tak perlu dibuka */}
+                    {!isExpanded && (
+                      <span className="font-mono whitespace-nowrap text-zinc-500 tabular-nums">
+                        {doneSets}/{totalSets} set
+                      </span>
+                    )}
                   </div>
                   </div>
-                </div>
+                </button>
 
-                {/* Actions: Ganti Gerakan (Alat Terpakai) & Hapus */}
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 shrink-0">
+                  {/* Foto cara gerakan — hanya saat kartu terbuka, supaya
+                      menyentuh thumbnail tak bentrok dengan lipatan kartu. */}
+                  {isExpanded && ex.imageUrl && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setExpandedImageIdx(
+                          expandedImageIdx === exIndex ? null : exIndex
+                        )
+                      }
+                      className="p-1.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-zinc-400 hover:text-emerald-300 transition-colors"
+                      title={expandedImageIdx === exIndex ? 'Tutup foto cara' : 'Lihat foto cara gerakan'}
+                      aria-label={`Lihat cara gerakan ${ex.name}`}
+                    >
+                      <Play className="w-4 h-4" />
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => toggleCard(exIndex)}
+                    className="p-1.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-zinc-400 transition-colors"
+                    title={isExpanded ? 'Lipat gerakan' : 'Buka gerakan'}
+                    aria-label={isExpanded ? `Lipat ${ex.name}` : `Buka ${ex.name}`}
+                  >
+                    <ChevronDown
+                      className={cn('w-4 h-4 transition-transform', isExpanded && 'rotate-180')}
+                    />
+                  </button>
                   <button
                     type="button"
                     onClick={() =>
@@ -993,6 +1054,8 @@ export function WorkoutRunner({
                 </div>
               </div>
 
+              {isExpanded && (
+              <>
               {/* Expanded: foto posisi awal & akhir */}
               {expandedImageIdx === exIndex && ex.imageUrl && (
                 <div className="grid grid-cols-2 gap-2">
@@ -1110,8 +1173,11 @@ export function WorkoutRunner({
                   )}
                 </div>
               )}
+              </>
+              )}
             </div>
-          ))
+            );
+          })
         )}
 
         {/* Tombol Tambah Gerakan Lain */}
