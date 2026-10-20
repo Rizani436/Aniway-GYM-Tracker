@@ -8,6 +8,7 @@ import {
   Play,
   Check,
   Plus,
+  Minus,
   Trash2,
   Replace,
   Sparkles,
@@ -59,6 +60,9 @@ interface WorkoutExerciseState {
   historyInfo?: ExerciseHistoryInfo | null;
   sets: SetRowData[];
 }
+
+/** Pilihan cepat durasi istirahat (detik) yang umum dipakai di gym. */
+const REST_PRESETS = [60, 90, 120, 180];
 
 interface WorkoutRunnerProps {
   user: {
@@ -459,6 +463,22 @@ export function WorkoutRunner({
     setExercises((prev) => {
       const next = [...prev];
       next[exerciseIndex] = { ...next[exerciseIndex], notes: value };
+      return next;
+    });
+  }, []);
+
+  // Handler ubah durasi istirahat gerakan SAAT sesi berjalan.
+  //
+  // Kenapa perlu: rest diambil dari program (mis. 90 detik), tapi di gym sering
+  // berubah — alat dipakai orang lain, atau mau istirahat lebih panjang untuk
+  // set berat. Tanpa ini angkanya terkunci sampai sesi selesai.
+  // Ikut tersimpan otomatis: seluruh `exercises` sudah ditulis ke draft, dan
+  // restSeconds per gerakan dipakai timer saat set dicentang.
+  const handleUpdateExerciseRest = useCallback((exerciseIndex: number, seconds: number) => {
+    const nilai = Math.max(0, Math.round(seconds));
+    setExercises((prev) => {
+      const next = [...prev];
+      next[exerciseIndex] = { ...next[exerciseIndex], restSeconds: nilai };
       return next;
     });
   }, []);
@@ -1117,6 +1137,57 @@ export function WorkoutRunner({
 
               {isExpanded && (
               <>
+              {/* Durasi istirahat per gerakan — bisa diubah SAAT sesi berjalan.
+                  Preset umum di gym + step kecil; nilai ini dipakai timer begitu
+                  set berikutnya dicentang (dan tersimpan di draft sesi). */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-zinc-500 shrink-0">
+                  <Timer className="w-3 h-3" />
+                  Istirahat
+                </span>
+                {REST_PRESETS.map((detik) => (
+                  <button
+                    key={detik}
+                    type="button"
+                    onClick={() => handleUpdateExerciseRest(exIndex, detik)}
+                    className={cn(
+                      'h-7 px-2 rounded-lg text-[11px] font-bold font-mono tabular-nums transition-colors touch-manipulation',
+                      ex.restSeconds === detik
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                        : 'bg-white/[0.05] text-zinc-400 border border-transparent active:bg-white/[0.12]'
+                    )}
+                    title={`Istirahat ${detik} detik`}
+                    aria-pressed={ex.restSeconds === detik}
+                  >
+                    {detik}s
+                  </button>
+                ))}
+                <div className="flex items-center gap-0.5">
+                  <button
+                    type="button"
+                    onClick={() => handleUpdateExerciseRest(exIndex, (ex.restSeconds || 0) - 15)}
+                    className="w-6 h-7 rounded-lg bg-white/[0.05] text-zinc-300 flex items-center justify-center active:scale-90 transition-transform touch-manipulation"
+                    aria-label="Kurangi istirahat 15 detik"
+                  >
+                    <Minus className="w-3 h-3" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleUpdateExerciseRest(exIndex, (ex.restSeconds || 0) + 15)}
+                    className="w-6 h-7 rounded-lg bg-white/[0.05] text-zinc-300 flex items-center justify-center active:scale-90 transition-transform touch-manipulation"
+                    aria-label="Tambah istirahat 15 detik"
+                  >
+                    <Plus className="w-3 h-3" />
+                  </button>
+                </div>
+                {/* Nilai bebas (mis. 100 detik): di luar preset tetap terbaca. */}
+                {!REST_PRESETS.includes(ex.restSeconds) && (
+                  <span className="text-[11px] font-bold font-mono tabular-nums text-emerald-300">
+                    {ex.restSeconds}s
+                  </span>
+                )}
+              </div>
+
               {/* Expanded: foto posisi awal & akhir */}
               {expandedImageIdx === exIndex && ex.imageUrl && (
                 <div className="grid grid-cols-2 gap-2">

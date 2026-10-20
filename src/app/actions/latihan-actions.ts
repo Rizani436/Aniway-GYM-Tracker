@@ -26,13 +26,14 @@ async function requireUser() {
 export async function getHomeDataAction() {
   const user = await requireUser();
 
-  // Hanya 4 round-trip DB paralel untuk seluruh halaman Home:
+  // Hanya 5 round-trip DB paralel untuk seluruh halaman Home:
   // 1. program + jumlah gerakan (tanpa nested exercise full row)
   // 2. jumlah gerakan di pustaka
   // 3. sesi terakhir yang selesai (untuk tombol "Ulangi Latihan Terakhir")
   // 4. sesi selesai 14 hari terakhir (untuk rekap mingguan)
+  // 5. jumlah rekor pribadi (untuk pintasan ke halaman PR)
   const tanggal14HariLalu = new Date(Date.now() - 14 * 24 * 3600 * 1000);
-  const [programs, exerciseCount, lastSession, recentSessions] = await Promise.all([
+  const [programs, exerciseCount, lastSession, recentSessions, prCount] = await Promise.all([
     prisma.program.findMany({
       where: { userId: user.id, isArchived: false },
       select: {
@@ -57,6 +58,12 @@ export async function getHomeDataAction() {
     prisma.workoutSession.findMany({
       where: { userId: user.id, isCompleted: true, startedAt: { gte: tanggal14HariLalu } },
       select: { startedAt: true, totalVolume: true },
+    }),
+    // Hitung gerakan berbeda yang punya PR — dipakai pintasan "PR Saya".
+    // Halaman /riwayat/pr sudah ada tapi sebelumnya tanpa jalan masuk dari Home.
+    prisma.setLog.groupBy({
+      by: ['exerciseId'],
+      where: { userId: user.id, isPersonalRecord: true, isCompleted: true },
     }),
   ]);
 
@@ -94,6 +101,9 @@ export async function getHomeDataAction() {
     exerciseCount,
     lastSession,
     weekRecap,
+    // Jumlah GERAKAN yang punya PR (bukan jumlah set PR) — angka yang bermakna
+    // bagi user: "berapa gerakan yang sudah pernah saya pecahkan rekornya".
+    prCount: prCount.length,
   };
 }
 

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { signOutAction } from '@/app/login/actions';
-import { Dumbbell, Layers, Play, Plus, LogOut, ChevronRight, Zap, Repeat, TrendingUp } from 'lucide-react';
+import { Dumbbell, Layers, Play, Plus, LogOut, ChevronRight, Zap, Repeat, TrendingUp, Trophy } from 'lucide-react';
 import { useHomeData, type HomeData } from '@/hooks/use-home-data';
 
 type HomeUser = { name?: string | null } | null;
@@ -10,7 +10,7 @@ type HomeUser = { name?: string | null } | null;
 export function HomeClient({ data, user }: { data: HomeData; user: HomeUser }) {
   // initialData dari server → first paint identik; revisit hit cache lokal.
   const { data: home } = useHomeData(data);
-  const { programs, exerciseCount, lastSession, weekRecap } = home;
+  const { programs, exerciseCount, lastSession, weekRecap, prCount } = home;
 
   const { thisWeek, lastWeek } = weekRecap;
   const volumeDelta =
@@ -76,6 +76,28 @@ export function HomeClient({ data, user }: { data: HomeData; user: HomeUser }) {
             <p className="text-[11px] text-zinc-400 font-medium mt-1 truncate">Gerakan Mesin</p>
           </div>
         </Link>
+
+        {/* Pintasan PR — halaman /riwayat/pr sudah ada, sebelumnya tanpa jalan masuk
+            dari Home sehingga praktis tak terjangkau. */}
+        {prCount > 0 && (
+          <Link
+            href="/riwayat/pr"
+            className="col-span-2 p-3.5 rounded-2xl bg-amber-500/[0.06] border border-amber-500/25 active:scale-[0.98] transition-transform flex items-center gap-3 touch-manipulation"
+          >
+            <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+              <Trophy className="w-5 h-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold tracking-tight text-white leading-none tabular-nums">
+                {prCount} Rekor Pribadi
+              </p>
+              <p className="text-[11px] text-amber-200/70 font-medium mt-1">
+                Gerakan yang sudah kamu pecahkan rekornya
+              </p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-amber-400/70 shrink-0" />
+          </Link>
+        )}
       </div>
 
       {/* Rekap Mingguan */}
