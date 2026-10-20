@@ -19,6 +19,7 @@ import {
   ChevronDown,
   X,
   StickyNote,
+  ListChecks,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
@@ -95,6 +96,31 @@ export function WorkoutRunner({
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [exercises, setExercises] = useState<WorkoutExerciseState[]>([]);
   const [sessionNotes, setSessionNotes] = useState('');
+  const [isProgramPickerOpen, setIsProgramPickerOpen] = useState(false);
+
+  // Pilih program: ganti seluruh gerakan sesuai isi program terpilih.
+  // Kenapa bukan cuma set programId: workout harus ikut terisi gerakan program
+  // (set, target reps, rest, prefill riwayat) — bukan cuma label.
+  const handleSelectProgram = (prog: any) => {
+    if (!prog) return;
+    const adaPerubahan =
+      exercises.some((ex: WorkoutExerciseState) => ex.sets?.some((s: SetRowData) => s.isCompleted)) ||
+      exercises.length > 0;
+    if (
+      adaPerubahan &&
+      !confirm(
+        `Ganti sesi latihan ke program "${prog.name}"?\nSemua gerakan saat ini akan diganti.`
+      )
+    ) {
+      return;
+    }
+    setProgramId(prog.id);
+    setSessionName(prog.name);
+    setExercises(createExercisesFromProgram(prog));
+    setStartedAt(new Date().toISOString());
+    setElapsedSeconds(0);
+    setIsProgramPickerOpen(false);
+  };
 
   // 2. State Rest Timer
   const [activeRestTimer, setActiveRestTimer] = useState<{
@@ -208,6 +234,25 @@ export function WorkoutRunner({
     // Offline: server tak terjangkau -> inisialisasi dari snapshot perangkat.
     if (isOffline) {
       if (snapshot?.selectedProgram) setExercises(createExercisesFromProgram(snapshot.selectedProgram));
+      return;
+    }
+
+    // Jika user membuka /workout dengan programId eksplisit di URL, program
+    // MENANG atas draft: maksudnya jelas "mulai sesi dari program ini",
+    // bukan melanjutkan draft lama (yang mungkin kosong/salah isi).
+    if (initialProgram?.id) {
+      try {
+        const stale = localStorage.getItem(storageKey);
+        if (stale) {
+          const p = JSON.parse(stale);
+          if (p?.programId !== initialProgram.id) localStorage.removeItem(storageKey);
+        }
+      } catch {
+        // ignore
+      }
+      setDraftBanner({ exists: false });
+      setSessionName(initialProgram.name);
+      setExercises(createExercisesFromProgram(initialProgram));
       return;
     }
 
@@ -750,8 +795,75 @@ export function WorkoutRunner({
             {liveVolume.toLocaleString('id-ID')} kg
           </span>
           <PlateCalculatorSheet className="ml-auto w-9 h-9 rounded-lg bg-transparent border-transparent text-zinc-400" />
+          <button
+            type="button"
+            onClick={() => setIsProgramPickerOpen(true)}
+            className="w-9 h-9 rounded-lg bg-transparent border border-white/[0.08] text-zinc-300 flex items-center justify-center active:scale-90 transition-transform hover:text-emerald-400"
+            aria-label="Pilih program latihan"
+            title="Pilih program latihan"
+          >
+            <ListChecks className="w-4 h-4" />
+          </button>
         </div>
       </div>
+
+      {/* Modal Pilih Program */}
+      {isProgramPickerOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-4"
+          onClick={() => setIsProgramPickerOpen(false)}
+        >
+          <div
+            className="bg-[#121314] border border-white/[0.08] rounded-3xl w-full max-w-md max-h-[70vh] overflow-y-auto p-4 space-y-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-bold text-white">Pilih Program Latihan</h3>
+              <button
+                type="button"
+                onClick={() => setIsProgramPickerOpen(false)}
+                className="w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center text-zinc-400 active:scale-90"
+                aria-label="Tutup"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            {userPrograms.length === 0 ? (
+              <p className="text-xs text-zinc-400 text-center py-6">
+                Belum ada program. Buat dulu di tab Latihan.
+              </p>
+            ) : (
+              userPrograms.map((prog: any) => (
+                <button
+                  key={prog.id}
+                  type="button"
+                  onClick={() => handleSelectProgram(prog)}
+                  className={cn(
+                    'w-full text-left p-3 rounded-2xl border transition-all active:scale-[0.98] space-y-1',
+                    prog.id === programId
+                      ? 'bg-emerald-500/10 border-emerald-500/40'
+                      : 'bg-white/[0.03] border-white/[0.06] hover:border-white/[0.15]'
+                  )}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-bold text-white text-sm truncate">
+                      {prog.name}
+                    </span>
+                    {prog.id === programId && (
+                      <span className="text-[10px] font-bold text-emerald-400 shrink-0">
+                        AKTIF
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-zinc-400">
+                    {(prog.exercises || []).length} gerakan
+                  </p>
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Daftar Gerakan Latihan */}
       <div className="space-y-4">
