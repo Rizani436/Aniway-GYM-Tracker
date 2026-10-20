@@ -564,7 +564,32 @@ export async function saveWorkoutSessionAction(input: SaveWorkoutSessionInput) {
 
   const processedExercises = data.exercises.map((ex, exIndex) => {
     const currentBest1RM = best1RMMap.get(ex.exerciseId) || 0;
-    let highestSet1RMInSession = currentBest1RM;
+
+    // PR = SATU per gerakan per sesi: hanya set kerja dengan 1RM tertinggi yang
+    // dibandingkan dengan rekor seumur latihan.
+    //
+    // Sebelumnya penandaan memakai "tertinggi sejauh sesi ini" (running max) yang
+    // ikut diperbarui tiap kali sebuah set jadi PR. Akibatnya kalau user menaikkan
+    // beban antar set, BEBERAPA set sama-sama ditandai PR dalam satu sesi (terbukti
+    // di scripts/diag-pr-duplicate.cjs: 3 set menanjak -> 3 banner PR untuk satu
+    // gerakan), padahal rekor sesi itu cuma satu.
+    const setKerja = ex.sets
+      .map((s, i) => ({ s, i }))
+      .filter(({ s }) => s.isCompleted && s.setType !== SetType.WARMUP && s.weight > 0 && s.reps > 0)
+      .map(({ s, i }) => ({ i, est: Math.round(s.weight * (1 + s.reps / 30) * 10) / 10 }));
+
+    const maxEst = setKerja.length ? Math.max(...setKerja.map((x) => x.est)) : 0;
+    const idxPR = setKerja.length && maxEst > currentBest1RM ? setKerja.find((x) => x.est === maxEst)!.i : -1;
+
+    if (idxPR >= 0) {
+      newPRs.push({
+        exerciseName: exerciseMap.get(ex.exerciseId) || 'Gerakan',
+        weight: ex.sets[idxPR].weight,
+        reps: ex.sets[idxPR].reps,
+        new1RM: maxEst,
+        previousBest1RM: currentBest1RM,
+      });
+    }
 
     const processedSets = ex.sets.map((set, sIndex) => {
       // Epley Formula: 1RM = Weight * (1 + Reps / 30)
@@ -575,24 +600,7 @@ export async function saveWorkoutSessionAction(input: SaveWorkoutSessionInput) {
 
       const isWarmup = set.setType === SetType.WARMUP;
 
-      let isPR = false;
-      if (
-        !isWarmup &&
-        set.isCompleted &&
-        estimated1RM > highestSet1RMInSession &&
-        estimated1RM > 0
-      ) {
-        isPR = true;
-        newPRs.push({
-          exerciseName: exerciseMap.get(ex.exerciseId) || 'Gerakan',
-          weight: set.weight,
-          reps: set.reps,
-          new1RM: estimated1RM,
-          previousBest1RM: highestSet1RMInSession,
-        });
-        highestSet1RMInSession = estimated1RM;
-      }
-
+      // Set pemanasan tidak dihitung sebagai volume kerja (beban kerja ≠ pemanasan).
       if (set.isCompleted && !isWarmup) {
         totalVolume += set.weight * set.reps;
       }
@@ -605,7 +613,7 @@ export async function saveWorkoutSessionAction(input: SaveWorkoutSessionInput) {
         rpe: set.rpe || null,
         estimated1RM,
         isCompleted: set.isCompleted,
-        isPersonalRecord: isPR,
+        isPersonalRecord: sIndex === idxPR,
         performedAt: endedAt,
         userId: user.id,
         exerciseId: ex.exerciseId,

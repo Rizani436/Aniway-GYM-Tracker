@@ -232,6 +232,21 @@ export const ExerciseSetRow = memo(function ExerciseSetRow({
 
       {/* Baris meta: Lalu (referensi sesi sebelumnya) · RPE · Hapus */}
       <div className="col-span-full flex items-center gap-1.5 pl-0.5 mt-0.5">
+        {/* Label jenis set non-Normal: badge huruf (W/D/F) kurang jelas bagi yang
+            belum tahu, dan `title` tidak muncul di HP. Jadi tulis namanya. */}
+        {set.setType !== SetType.NORMAL && (
+          <span
+            className={cn(
+              'text-[10px] font-bold shrink-0',
+              set.setType === SetType.WARMUP && 'text-amber-300',
+              set.setType === SetType.DROPSET && 'text-purple-300',
+              set.setType === SetType.FAILURE && 'text-rose-300'
+            )}
+          >
+            {setTypeLabel()}
+          </span>
+        )}
+
         {set.previousRecord && (
           <button
             type="button"

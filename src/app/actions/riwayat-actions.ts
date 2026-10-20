@@ -18,7 +18,7 @@ export async function getRiwayatDataAction() {
   const user = await requireUser();
 
   // Kedua query dijalankan paralel: 1 round-trip gabungan, bukan 2 berurutan.
-  const [sessions, availableExercises] = await Promise.all([
+  const [sessions, availableExercises, programAktif] = await Promise.all([
     prisma.workoutSession.findMany({
       where: {
         userId: user.id,
@@ -54,6 +54,18 @@ export async function getRiwayatDataAction() {
         weightIncrement: true,
       },
       orderBy: { name: 'asc' },
+    }),
+    // Program aktif + jumlah gerakan + tanggal dibuat — dipakai untuk pengingat
+    // "program mana yang sudah lama tidak disentuh" (bagian 3 di bawah).
+    prisma.program.findMany({
+      where: { userId: user.id, isArchived: false },
+      select: {
+        id: true,
+        name: true,
+        color: true,
+        createdAt: true,
+        _count: { select: { exercises: true } },
+      },
     }),
   ]);
 
@@ -117,6 +129,45 @@ export async function getRiwayatDataAction() {
     volume: val.volume,
   }));
 
+  // 3. Pengingat latihan: program mana yang sudah lama tidak disentuh.
+  //
+  // Kenapa: user hanya sadar satu program terlewat setelah membuka Riwayat.
+  // Dihitung dari data yang SUDAH ada (tanggal sesi per program) — tanpa kolom
+  // baru, tanpa menjadwalkan hari tertentu yang bisa salah tebak. Aturannya:
+  // program aktif yang belum punya sesi dalam 7 hari terakhir (atau belum pernah
+  // sama sekali) dianggap perlu dilanjutkan.
+  //
+  // Masa tenggang program baru = 3 hari, bukan 7: program yang sudah dibuat
+  // berhari-hari tapi TIDAK PERNAH dilatih justru kasus yang paling perlu
+  // diingatkan (terbukti dari data sendiri: "Leg Day" dibuat 5 hari lalu, nol
+  // sesi — dengan tenggang 7 hari kasus ini tak pernah muncul).
+  const tujuhHariLalu = new Date(Date.now() - 7 * 24 * 3600 * 1000);
+  const tenggangProgramBaru = new Date(Date.now() - 3 * 24 * 3600 * 1000);
+  const programJatuhTempo: Array<{
+    id: string;
+    name: string;
+    color: string;
+    hariLalu: number | null;
+    jumlahGerakan: number;
+  }> = [];
+
+  for (const p of programAktif) {
+    if (p.createdAt >= tenggangProgramBaru) continue; // baru dibuat — belum perlu diingatkan
+    if (p._count.exercises === 0) continue; // program kosong — bukan pengingat, tapi perlu diisi
+    const sesiTerakhir = sessions.find((s) => s.program?.id === p.id);
+    if (sesiTerakhir) {
+      const selisihHari = Math.floor(
+        (Date.now() - new Date(sesiTerakhir.startedAt).getTime()) / (24 * 3600 * 1000)
+      );
+      if (selisihHari < 7) continue; // baru dilatih, tidak perlu diingatkan
+      programJatuhTempo.push({ id: p.id, name: p.name, color: p.color, hariLalu: selisihHari, jumlahGerakan: p._count.exercises });
+    } else {
+      programJatuhTempo.push({ id: p.id, name: p.name, color: p.color, hariLalu: null, jumlahGerakan: p._count.exercises });
+    }
+  }
+  // Paling lama tidak disentuh naik ke atas.
+  programJatuhTempo.sort((a, b) => (b.hariLalu ?? 9999) - (a.hariLalu ?? 9999));
+
   // Ambil daftar gerakan untuk modal input sesi manual
   // (sudah dijalankan paralel di atas)
 
@@ -130,6 +181,7 @@ export async function getRiwayatDataAction() {
     },
     heatmapData,
     availableExercises,
+    programJatuhTempo,
   };
 }
 

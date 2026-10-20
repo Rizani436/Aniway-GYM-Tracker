@@ -22,6 +22,7 @@ export default async function RiwayatPage() {
         stats={data.stats}
         heatmapData={data.heatmapData}
         availableExercises={data.availableExercises}
+        programJatuhTempo={data.programJatuhTempo}
       />
     </main>
   );

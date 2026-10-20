@@ -14,6 +14,7 @@ import {
   Search,
   ChevronRight,
   TrendingUp,
+  AlertCircle,
 } from 'lucide-react';
 import { ActivityHeatmap } from './activity-heatmap';
 import { SessionDetailModal } from './session-detail-modal';
@@ -33,6 +34,14 @@ interface RiwayatClientProps {
     volume: number;
   }>;
   availableExercises: any[];
+  /** Program aktif yang sudah lama tidak dilatih (≥7 hari) atau belum pernah. */
+  programJatuhTempo?: Array<{
+    id: string;
+    name: string;
+    color: string;
+    hariLalu: number | null;
+    jumlahGerakan: number;
+  }>;
 }
 
 export function RiwayatClient({
@@ -40,6 +49,7 @@ export function RiwayatClient({
   stats,
   heatmapData,
   availableExercises,
+  programJatuhTempo = [],
 }: RiwayatClientProps) {
   const router = useRouter();
   const [sessions] = useState(initialSessions);
@@ -150,6 +160,44 @@ export function RiwayatClient({
           </div>
         </Link>
       </div>
+
+      {/* Pengingat: program yang sudah lama tidak dilatih.
+          Dihitung dari tanggal sesi yang sudah ada — bukan jadwal yang ditebak. */}
+      {programJatuhTempo.length > 0 && (
+        <div className="p-3.5 rounded-2xl bg-amber-500/[0.06] border border-amber-500/25 space-y-2.5">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+              <AlertCircle className="w-4 h-4" />
+            </div>
+            <p className="text-xs font-bold text-amber-200">
+              Sudah lama tidak dilatih
+            </p>
+          </div>
+          <div className="space-y-1.5">
+            {programJatuhTempo.slice(0, 3).map((prog) => (
+              <Link
+                key={prog.id}
+                href={`/workout?programId=${prog.id}`}
+                className="flex items-center gap-2.5 p-2 rounded-xl bg-white/[0.03] border border-white/[0.07] active:scale-[0.99] transition-transform touch-manipulation"
+              >
+                <span
+                  className="w-1.5 h-7 rounded-full shrink-0"
+                  style={{ backgroundColor: prog.color }}
+                />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-xs font-semibold text-white truncate">{prog.name}</span>
+                  <span className="block text-[10px] text-zinc-400">
+                    {prog.hariLalu === null
+                      ? `Belum pernah dilatih · ${prog.jumlahGerakan} gerakan`
+                      : `${prog.hariLalu} hari lalu · ${prog.jumlahGerakan} gerakan`}
+                  </span>
+                </span>
+                <span className="text-[10px] font-bold text-emerald-400 shrink-0">Mulai →</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Activity Heatmap */}
       <ActivityHeatmap data={heatmapData} />
