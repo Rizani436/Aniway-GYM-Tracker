@@ -18,18 +18,21 @@ export function WorkoutTimerBar({ initialSeconds, onFinish, onClose }: WorkoutTi
   soundRef.current = isSoundEnabled;
   const onFinishRef = useRef(onFinish);
   onFinishRef.current = onFinish;
+  // Deadline di ref: addTime menggesernya, interval selalu membaca nilai terbaru.
+  // (Kalau deadline cuma variabel di closure effect, tick 250ms menimpa hasil +/−15.)
+  const deadlineRef = useRef(Date.now() + initialSeconds * 1000);
 
   // Timer tunggal berbasis deadline — akurat meski tab di-background browser mobile
   useEffect(() => {
-    const deadline = Date.now() + initialSeconds * 1000;
+    deadlineRef.current = Date.now() + initialSeconds * 1000;
     setTotalSeconds(initialSeconds);
     setSecondsLeft(initialSeconds);
 
     const interval = setInterval(() => {
-      const remaining = Math.max(0, Math.round((deadline - Date.now()) / 1000));
+      const secsToGo = deadlineRef.current - Date.now();
+      const remaining = Math.max(0, Math.round(secsToGo / 1000));
       setSecondsLeft(remaining);
 
-      const secsToGo = deadline - Date.now();
       if (secsToGo <= 4000 && secsToGo > 1000 && soundRef.current) {
         playBeep(660, 80);
       }
@@ -47,11 +50,10 @@ export function WorkoutTimerBar({ initialSeconds, onFinish, onClose }: WorkoutTi
   }, [initialSeconds]);
 
   const addTime = useCallback((secs: number) => {
-    setSecondsLeft((prev) => {
-      const next = Math.max(0, prev + secs);
-      setTotalSeconds((t) => Math.max(t, next));
-      return next;
-    });
+    deadlineRef.current = Math.max(Date.now(), deadlineRef.current + secs * 1000);
+    const next = Math.max(0, Math.round((deadlineRef.current - Date.now()) / 1000));
+    setSecondsLeft(next);
+    setTotalSeconds((t) => Math.max(t, next));
   }, []);
 
   const progressPct = totalSeconds > 0 ? ((totalSeconds - secondsLeft) / totalSeconds) * 100 : 100;
