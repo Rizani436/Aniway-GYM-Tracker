@@ -231,7 +231,12 @@ export async function createManualWorkoutSessionAction(input: ManualSessionInput
     })
   );
 
-  const totalVolume = setRows.reduce((acc, s) => acc + s.weight * s.reps, 0);
+  // Set PEMANASAN tidak dihitung sebagai volume kerja (definisi sama dengan
+  // saveWorkoutSessionAction) — kalau tidak, angka volume menggelembung.
+  const totalVolume = setRows.reduce(
+    (acc, s) => (s.setType === SetType.WARMUP ? acc : acc + s.weight * s.reps),
+    0
+  );
 
   const session = await prisma.$transaction(
     async (tx) => {
@@ -319,6 +324,8 @@ export async function updateSetLogAction(
       const sessionSets = await tx.setLog.findMany({
         where: {
           isCompleted: true,
+          // Set pemanasan bukan volume kerja — konsisten dengan saveWorkoutSessionAction.
+          setType: { not: SetType.WARMUP },
           sessionExercise: { workoutSessionId: set.sessionExercise.workoutSessionId },
         },
         select: { weight: true, reps: true },

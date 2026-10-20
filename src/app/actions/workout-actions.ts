@@ -554,6 +554,11 @@ export async function saveWorkoutSessionAction(input: SaveWorkoutSessionInput) {
   });
 
   // 2. Kalkulasi total volume & deteksi rekor personal (PR)
+  //
+  // Set PEMANASAN (WARMUP) dikecualikan dari volume kerja dan dari deteksi PR:
+  // volume = beban kerja, bukan beban pemanasan. Sebelum ini, satu set pemanasan
+  // 40kg ikut menambah totalVolume sehingga angka volume sesi & rekap mingguan
+  // menggelembung di atas yang sebenarnya.
   let totalVolume = 0;
   const newPRs: NewPRInfo[] = [];
 
@@ -568,8 +573,15 @@ export async function saveWorkoutSessionAction(input: SaveWorkoutSessionInput) {
           ? Math.round((set.weight * (1 + set.reps / 30)) * 10) / 10
           : 0;
 
+      const isWarmup = set.setType === SetType.WARMUP;
+
       let isPR = false;
-      if (set.isCompleted && estimated1RM > highestSet1RMInSession && estimated1RM > 0) {
+      if (
+        !isWarmup &&
+        set.isCompleted &&
+        estimated1RM > highestSet1RMInSession &&
+        estimated1RM > 0
+      ) {
         isPR = true;
         newPRs.push({
           exerciseName: exerciseMap.get(ex.exerciseId) || 'Gerakan',
@@ -581,7 +593,7 @@ export async function saveWorkoutSessionAction(input: SaveWorkoutSessionInput) {
         highestSet1RMInSession = estimated1RM;
       }
 
-      if (set.isCompleted) {
+      if (set.isCompleted && !isWarmup) {
         totalVolume += set.weight * set.reps;
       }
 
