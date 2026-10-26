@@ -6,8 +6,12 @@ WORKDIR /app
 # 2. Dependencies stage
 FROM base AS deps
 COPY package.json package-lock.json* ./
-COPY prisma ./prisma/
-RUN npm ci
+# CATATAN: schema prisma TIDAK di-copy di stage ini. Dulu ada `COPY prisma ./prisma/`
+# di sini, sehingga tiap perubahan schema mem-bust cache layer `npm ci` dan semua
+# dependency di-download ulang (di VPS dengan koneksi lambat ke registry.npmjs.org
+# ini berarti build 8 menit lalu gagal EIDLETIMEOUT). Schema masuk lewat
+# `COPY . .` di builder, sebelum `npx prisma generate`.
+RUN npm config set fetch-timeout 600000 && npm ci
 
 # 3. Builder stage
 FROM base AS builder
@@ -83,6 +87,10 @@ COPY --from=builder --chown=nextjs:nogroup /app/public ./public
 RUN find public -type d -exec chmod 755 {} + && find public -type f -exec chmod 644 {} +
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# Prisma CLI + schema ikut ke runner: dari host, `docker compose exec aniway-app npx prisma db push`
+# jalan offline (runner standalone tidak bawa prisma CLI, user nextjs tak punya home untuk cache npm).
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 
 USER nextjs
