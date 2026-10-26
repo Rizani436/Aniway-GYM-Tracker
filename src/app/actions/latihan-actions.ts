@@ -155,7 +155,28 @@ export async function getProgramByIdAction(programId: string) {
     throw new Error('Program tidak ditemukan.');
   }
 
-  return program;
+  // 1RM terbaik SEUMUR HIDUP per gerakan dalam program ini (satu query groupBy,
+  // bukan loop per gerakan). Dipakai UI untuk "PR sekarang vs target".
+  // Hanya set kerja (NORMAL/DROPSET) yang dihitung — WARMUP tidak boleh memicu.
+  const exerciseIds = program.exercises.map((pe) => pe.exerciseId);
+  const best1RMRows = exerciseIds.length
+    ? await prisma.setLog.groupBy({
+        by: ['exerciseId'],
+        where: {
+          userId: user.id,
+          exerciseId: { in: exerciseIds },
+          isCompleted: true,
+          setType: { in: ['NORMAL', 'DROPSET'] },
+        },
+        _max: { estimated1RM: true },
+      })
+    : [];
+  const best1RMByExercise: Record<string, number> = {};
+  for (const row of best1RMRows) {
+    if (row._max.estimated1RM != null) best1RMByExercise[row.exerciseId] = row._max.estimated1RM;
+  }
+
+  return { ...program, best1RMByExercise };
 }
 
 export async function upsertProgramAction(input: ProgramInput) {
@@ -202,6 +223,63 @@ export async function upsertProgramAction(input: ProgramInput) {
     return created;
   }
 }
+
+// ============================================================
+// Duplikasi program ("salin jadi template lalu edit")
+// ============================================================
+
+export async function duplicateProgramAction(programId: string) {
+  const user = await requireUser();
+
+  const sumber = await prisma.program.findFirst({
+    where: { id: programId, userId: user.id },
+    include: { exercises: { orderBy: { sortOrder: 'asc' } } },
+  });
+  if (!sumber) throw new Error('Program tidak ditemukan.');
+
+  const lastProgram = await prisma.program.findFirst({
+    where: { userId: user.id },
+    orderBy: { sortOrder: 'desc' },
+  });
+
+  const hasil = await prisma.$transaction(async (tx) => {
+    const baru = await tx.program.create({
+      data: {
+        userId: user.id,
+        name: `${sumber.name} (Salinan)`,
+        description: sumber.description,
+        color: sumber.color,
+        sortOrder: (lastProgram?.sortOrder ?? -1) + 1,
+      },
+    });
+    // @@unique([programId, exerciseId, sortOrder]) — sortOrder disalin apa adanya
+    // karena uniknya per-program, bukan global.
+    if (sumber.exercises.length > 0) {
+      await tx.programExercise.createMany({
+        data: sumber.exercises.map((pe) => ({
+          programId: baru.id,
+          exerciseId: pe.exerciseId,
+          sortOrder: pe.sortOrder,
+          targetSets: pe.targetSets,
+          targetRepMin: pe.targetRepMin,
+          targetRepMax: pe.targetRepMax,
+          restSeconds: pe.restSeconds,
+          target1RM: pe.target1RM,
+          notes: pe.notes,
+        })),
+      });
+    }
+    return baru;
+  });
+
+  revalidatePath('/latihan');
+  revalidatePath('/');
+  return hasil;
+}
+
+// ============================================================
+// Duplikasi program selesai
+// ============================================================
 
 export async function saveSessionAsProgramAction(input: {
   sessionId: string;
@@ -360,6 +438,7 @@ export async function addExerciseToProgramAction(input: ProgramExerciseInput) {
       targetRepMin: parsed.data.targetRepMin,
       targetRepMax: parsed.data.targetRepMax,
       restSeconds: parsed.data.restSeconds,
+      target1RM: parsed.data.target1RM ?? null,
       notes: parsed.data.notes || null,
     },
     include: { exercise: true },
@@ -378,6 +457,8 @@ export async function updateProgramExerciseAction(
     targetRepMin: number;
     targetRepMax: number;
     restSeconds: number;
+    /** Target 1RM dalam kg KANONIK (sudah dikonversi pemanggil). Null = hapus target. */
+    target1RM?: number | null;
     notes?: string | null;
   }
 ) {
@@ -395,6 +476,9 @@ export async function updateProgramExerciseAction(
   if (data.targetRepMax < data.targetRepMin) {
     throw new Error('Rep maksimal tidak boleh lebih kecil dari rep minimal.');
   }
+  if (data.target1RM != null && !(data.target1RM > 0 && data.target1RM < 1000)) {
+    throw new Error('Target 1RM tidak wajar.');
+  }
 
   const updated = await prisma.programExercise.update({
     where: { id },
@@ -403,6 +487,7 @@ export async function updateProgramExerciseAction(
       targetRepMin: data.targetRepMin,
       targetRepMax: data.targetRepMax,
       restSeconds: data.restSeconds,
+      target1RM: data.target1RM ?? null,
       notes: data.notes || null,
     },
   });

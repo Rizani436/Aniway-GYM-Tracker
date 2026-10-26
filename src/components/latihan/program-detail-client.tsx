@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   DndContext,
@@ -28,6 +29,7 @@ import {
   Play,
   Search,
   ExternalLink,
+  Copy,
   Check,
 } from 'lucide-react';
 import {
@@ -37,10 +39,11 @@ import {
   updateProgramExerciseAction,
   removeExerciseFromProgramAction,
   reorderProgramExercisesAction,
+  duplicateProgramAction,
 } from '@/app/actions/latihan-actions';
 import { MUSCLE_LABELS, EQUIPMENT_LABELS } from '@/lib/constants';
 import { ExerciseFormModal } from './exercise-form-modal';
-import { roundWeight, weightUnitLabel } from '@/lib/units';
+import { roundWeight, weightUnitLabel, toKg } from '@/lib/units';
 
 type ProgramDetailType = Awaited<ReturnType<typeof getProgramByIdAction>>;
 type AllExercisesType = Awaited<ReturnType<typeof getExercisesAction>>;
@@ -52,6 +55,7 @@ function SortableProgramExerciseItem({
   onUpdate,
   onRemove,
   weightUnit,
+  best1RM,
 }: {
   item: ProgramDetailType['exercises'][number];
   index: number;
@@ -63,11 +67,14 @@ function SortableProgramExerciseItem({
       targetRepMin: number;
       targetRepMax: number;
       restSeconds: number;
+      target1RM?: number | null;
       notes?: string | null;
     }
   ) => void;
   onRemove: (id: string) => void;
   weightUnit?: string;
+  /** 1RM terbaik seumur hidup untuk gerakan ini (kg kanonik) dari server. */
+  best1RM?: number;
 }) {
   const {
     attributes,
@@ -82,6 +89,10 @@ function SortableProgramExerciseItem({
   const [repMin, setRepMin] = useState(item.targetRepMin);
   const [repMax, setRepMax] = useState(item.targetRepMax);
   const [restSec, setRestSec] = useState(item.restSeconds);
+  // Target 1RM diedit dalam satuan TAMPILAN; dikirim ke parent dalam kg kanonik.
+  const [target1RM, setTarget1RM] = useState(
+    item.target1RM != null ? roundWeight(item.target1RM, weightUnit) : ('' as string | number)
+  );
   const [notes, setNotes] = useState(item.notes ?? '');
   const [isDirty, setIsDirty] = useState(false);
 
@@ -138,10 +149,59 @@ function SortableProgramExerciseItem({
             {EQUIPMENT_LABELS[item.exercise.equipment]} (+
             {roundWeight(item.exercise.weightIncrement, weightUnit)} {weightUnitLabel(weightUnit)})
           </p>
+          {/* Progres target 1RM: PR seumur hidup vs target program ini.
+              >=100% = target tercapai (hijau). Tanpa target / tanpa PR = tak tampil. */}
+          {item.target1RM != null && (
+            <div className="mt-1.5 flex items-center gap-1.5">
+              {(() => {
+                const unit = weightUnitLabel(weightUnit);
+                const pr = best1RM != null ? roundWeight(best1RM, weightUnit) : null;
+                const target = roundWeight(item.target1RM, weightUnit);
+                const persen = best1RM != null ? Math.min(999, Math.round((best1RM / item.target1RM) * 100)) : null;
+                const tercapai = persen != null && persen >= 100;
+                return (
+                  <>
+                    <span
+                      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold tabular-nums ${
+                        tercapai
+                          ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30'
+                          : 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/25'
+                      }`}
+                    >
+                      {pr != null ? `${pr} / ${target} ${unit}` : `Target: ${target} ${unit}`}
+                      {tercapai && ' ✓'}
+                    </span>
+                    {persen != null && persen < 100 && (
+                      <span className="text-[10px] text-[var(--muted-strong)] tabular-nums">{persen}%</span>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+          )}
         </div>
       </div>
 
       <div className="grid grid-cols-4 gap-2 pt-1">
+        <div>
+          <label className="block text-[10px] uppercase text-[var(--muted)] mb-1 flex items-center gap-0.5">
+            Target {weightUnitLabel(weightUnit)}
+          </label>
+          <input
+            type="number"
+            inputMode="decimal"
+            step="0.5"
+            min={0}
+            placeholder="-"
+            value={target1RM}
+            onChange={(e) => {
+              setTarget1RM(e.target.value === '' ? '' : Number(e.target.value));
+              setIsDirty(true);
+            }}
+            className="w-full px-2.5 py-2 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-center font-bold text-sm"
+          />
+        </div>
+
         <div>
           <label className="block text-[10px] uppercase text-[var(--muted)] mb-1">
             Target Set
@@ -237,6 +297,8 @@ function SortableProgramExerciseItem({
                 targetRepMin: repMin,
                 targetRepMax: repMax,
                 restSeconds: restSec,
+                // Input dalam satuan tampilan -> kg kanonik; kosong = hapus target.
+                target1RM: target1RM === '' || target1RM == null ? null : toKg(Number(target1RM), weightUnit),
                 notes,
               });
               setIsDirty(false);
@@ -264,6 +326,7 @@ export function ProgramDetailClient({
   weightUnit?: string;
 }) {
   const queryClient = useQueryClient();
+  const router = useRouter();
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [isNewExerciseModalOpen, setIsNewExerciseModalOpen] = useState(false);
   const [pickerSearch, setPickerSearch] = useState('');
@@ -314,6 +377,7 @@ export function ProgramDetailClient({
         targetRepMin: number;
         targetRepMax: number;
         restSeconds: number;
+        target1RM?: number | null;
         notes?: string | null;
       };
     }) => updateProgramExerciseAction(id, payload),
@@ -335,6 +399,15 @@ export function ProgramDetailClient({
       reorderProgramExercisesAction(program.id, orderedIds),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['program', program.id] });
+    },
+  });
+
+  // Salin program: buat duplikat lengkap dengan gerakannya, lalu buka.
+  const duplicateMutation = useMutation({
+    mutationFn: () => duplicateProgramAction(program.id),
+    onSuccess: (baru) => {
+      queryClient.invalidateQueries({ queryKey: ['programs'] });
+      router.push(`/latihan/program/${baru.id}`);
     },
   });
 
@@ -388,14 +461,26 @@ export function ProgramDetailClient({
             </p>
           </div>
 
-          <Link
-            href={`/workout?programId=${program.id}`}
-            style={{ backgroundColor: program.color }}
-            className="px-4 py-3 rounded-xl text-zinc-950 font-bold text-xs flex items-center gap-1.5 shrink-0 shadow-lg"
-          >
-            <Play className="w-4 h-4 fill-current" />
-            Mulai Sesi
-          </Link>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => duplicateMutation.mutate()}
+              disabled={duplicateMutation.isPending}
+              className="w-11 h-11 rounded-xl bg-[var(--card)] border border-[var(--border)] flex items-center justify-center text-[var(--fg-soft)] active:scale-90 transition-transform disabled:opacity-40"
+              aria-label="Salin program ini"
+              title="Salin program ini"
+            >
+              <Copy className="w-4 h-4" />
+            </button>
+            <Link
+              href={`/workout?programId=${program.id}`}
+              style={{ backgroundColor: program.color }}
+              className="px-4 py-3 rounded-xl text-zinc-950 font-bold text-xs flex items-center gap-1.5 shadow-lg"
+            >
+              <Play className="w-4 h-4 fill-current" />
+              Mulai Sesi
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -439,6 +524,7 @@ export function ProgramDetailClient({
                   }
                   onRemove={(id) => removeMutation.mutate(id)}
                   weightUnit={weightUnit}
+                  best1RM={program.best1RMByExercise?.[item.exercise.id]}
                 />
               ))}
             </div>
