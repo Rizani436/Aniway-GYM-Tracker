@@ -216,6 +216,7 @@ export function ExerciseDetailClient({
         onClose={() => setIsEditOpen(false)}
         initialData={exercise}
         userId={userId}
+        weightUnit={weightUnit}
         onSuccessCreated={(newId) => {
           if (newId !== exercise.id) {
             router.push(`/latihan/gerakan/${newId}`);

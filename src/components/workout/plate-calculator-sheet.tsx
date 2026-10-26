@@ -2,29 +2,41 @@
 
 import { useMemo, useState } from 'react';
 import { Calculator, X } from 'lucide-react';
-import { calculatePlates } from '@/lib/plate-calculator';
+import { calculatePlates, KG_PLATES, LB_PLATES } from '@/lib/plate-calculator';
+import { isLb } from '@/lib/units';
 import { cn } from '@/lib/utils';
 
-const BAR_WEIGHT = 20;
+const BAR_KG = 20;
+const BAR_LB = 45;
 
 /**
  * Tombol + bottom sheet kalkulator plat. Self-contained (state internal),
- * cukup render <PlateCalculatorSheet /> di header runner.
- * ponytail: bar fix 20 kg (barbell Olympic standar gym), tambah prop barWeight bila perlu.
+ * cukup render <PlateCalculatorSheet unit={unit} /> di header runner.
+ * Plat & bar mengikuti satuan tampilan user (kg: bar 20 kg; lb: bar 45 lb).
  */
-export function PlateCalculatorSheet({ className }: { className?: string } = {}) {
+export function PlateCalculatorSheet({
+  className,
+  unit,
+}: {
+  className?: string;
+  unit?: string;
+} = {}) {
   const [isOpen, setIsOpen] = useState(false);
   const [weight, setWeight] = useState('');
+  const lb = isLb(unit);
+  const bar = lb ? BAR_LB : BAR_KG;
+  const plates = lb ? LB_PLATES : KG_PLATES;
+  const unitLabel = lb ? 'lb' : 'kg';
 
   const result = useMemo(() => {
     const total = parseFloat(weight);
     if (isNaN(total) || total <= 0) return { plates: null as number[] | null, error: null as string | null };
     try {
-      return { plates: calculatePlates(total, BAR_WEIGHT), error: null };
+      return { plates: calculatePlates(total, bar, plates), error: null as string | null };
     } catch (err) {
       return { plates: null, error: (err as Error).message };
     }
-  }, [weight]);
+  }, [weight, bar, plates]);
 
   // Gabungkan plat identik: [15,5,1.25] → "15 kg × 1" dst (terberat dulu)
   const counts = useMemo(() => {
@@ -75,7 +87,7 @@ export function PlateCalculatorSheet({ className }: { className?: string } = {})
 
             <div>
               <label htmlFor="plate-weight" className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted)]">
-                Beban Total (kg)
+                Beban Total ({unitLabel})
               </label>
               <input
                 id="plate-weight"
@@ -99,7 +111,7 @@ export function PlateCalculatorSheet({ className }: { className?: string } = {})
 
             {!result.error && result.plates && result.plates.length === 0 && (
               <p className="text-xs text-[var(--muted)] bg-[var(--card)] border border-[var(--border)] rounded-xl p-3">
-                Lebih ringan dari bar ({BAR_WEIGHT} kg) — pakai bar saja atau bar + plat kecil.
+                Lebih ringan dari bar ({bar} {unitLabel}) — pakai bar saja atau bar + plat kecil.
               </p>
             )}
 
@@ -114,12 +126,12 @@ export function PlateCalculatorSheet({ className }: { className?: string } = {})
                       key={plate}
                       className="px-2.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-xs font-bold font-mono tabular-nums"
                     >
-                      {plate} kg × {n}
+                      {plate} {unitLabel} × {n}
                     </span>
                   ))}
                 </div>
                 <p className="mt-2 text-[11px] text-[var(--muted-strong)] font-mono tabular-nums">
-                  Bar {BAR_WEIGHT} kg + plat per sisi = {weight} kg
+                  Bar {bar} {unitLabel} + plat per sisi = {weight} {unitLabel}
                 </p>
               </div>
             )}

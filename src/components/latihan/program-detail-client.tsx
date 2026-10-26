@@ -549,6 +549,7 @@ export function ProgramDetailClient({
         onClose={() => setIsNewExerciseModalOpen(false)}
         attachToProgramId={program.id}
         userId={userId}
+        weightUnit={weightUnit}
       />
     </div>
   );

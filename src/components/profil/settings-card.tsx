@@ -23,6 +23,7 @@ export function SettingsCard({
   const [theme, setTheme] = useState<ThemeMode>(initialTheme);
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const dirty =
     weightUnit !== initialWeightUnit ||
@@ -37,6 +38,7 @@ export function SettingsCard({
 
   const handleSave = () => {
     setSaved(false);
+    setSaveError(null);
     startTransition(async () => {
       try {
         await updateUserSettingsAction({
@@ -49,7 +51,7 @@ export function SettingsCard({
         // Reset penanda "tersimpan" setelah 2 detik
         setTimeout(() => setSaved(false), 2000);
       } catch (e) {
-        alert((e as Error)?.message || 'Gagal menyimpan pengaturan.');
+        setSaveError((e as Error)?.message || 'Gagal menyimpan pengaturan.');
       }
     });
   };
@@ -193,6 +195,11 @@ export function SettingsCard({
           'Simpan Pengaturan'
         )}
       </button>
+      {saveError && (
+        <p className="text-[11px] text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-xl p-3">
+          {saveError}
+        </p>
+      )}
     </section>
   );
 }

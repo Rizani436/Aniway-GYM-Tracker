@@ -17,4 +17,12 @@ assert.throws(() => calculatePlates(63, 20), /tidak bisa dibentuk/);
 // floating point: 7.5 = 5 + 2.5
 assert.deepStrictEqual(calculatePlates(35, 20), [5, 2.5]);
 
+// Mode LB: bar 45 lb, plat [45, 35, 25, 10, 5, 2.5]
+// 135 lb → (135-45)/2 = 45 per sisi → satu plat 45
+assert.deepStrictEqual(calculatePlates(135, 45, [45, 35, 25, 10, 5, 2.5]), [45]);
+// 225 lb → 90 per sisi → 45 + 45 (greedy: plat terbesar dulu, paling sedikit)
+assert.deepStrictEqual(calculatePlates(225, 45, [45, 35, 25, 10, 5, 2.5]), [45, 45]);
+// lebih ringan dari bar 45 lb → kosong
+assert.deepStrictEqual(calculatePlates(40, 45, [45, 35, 25, 10, 5, 2.5]), []);
+
 console.log('✓ test-plate-calculator lulus');

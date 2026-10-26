@@ -10,6 +10,7 @@ import {
 } from '@/lib/constants';
 import { upsertExerciseAction } from '@/app/actions/latihan-actions';
 import { uploadExerciseImage } from '@/lib/storage';
+import { toDisplayWeight, toKg, weightUnitLabel } from '@/lib/units';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface ExerciseFormInitialData {
@@ -34,6 +35,8 @@ interface ExerciseFormModalProps {
   attachToProgramId?: string;
   onSuccessCreated?: (exerciseId: string) => void;
   userId: string;
+  /** Satuan tampilan user — increment ditampilkan & diinput dalam satuannya. */
+  weightUnit?: string;
 }
 
 export function ExerciseFormModal({
@@ -43,6 +46,7 @@ export function ExerciseFormModal({
   attachToProgramId,
   onSuccessCreated,
   userId,
+  weightUnit,
 }: ExerciseFormModalProps) {
   const queryClient = useQueryClient();
 
@@ -76,6 +80,10 @@ export function ExerciseFormModal({
   const [imageUrl, setImageUrl] = useState(initialData?.imageUrl ?? '');
   const [uploading, setUploading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Increment ditampilkan & diinput dalam satuan user (kg/lb); DB tetap kanonik kg.
+  const unitLabel = weightUnitLabel(weightUnit);
+  const incrementDisplay = toDisplayWeight(weightIncrement, weightUnit);
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -219,30 +227,33 @@ export function ExerciseFormModal({
 
           <div>
             <label className="block text-xs font-semibold text-[var(--muted)] mb-1.5">
-              Kenaikan Beban Alat / Increment (kg) *
+              Kenaikan Beban Alat / Increment ({unitLabel}) *
             </label>
             <div className="flex flex-wrap gap-2 mb-2">
-              {WEIGHT_INCREMENT_OPTIONS.map((inc) => (
-                <button
-                  key={inc}
-                  type="button"
-                  onClick={() => setWeightIncrement(inc)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition ${
-                    weightIncrement === inc
-                      ? 'bg-emerald-500 text-zinc-950 border-emerald-500'
-                      : 'bg-[var(--bg)] text-[var(--fg-soft)] border-[var(--border)]'
-                  }`}
-                >
-                  +{inc} kg
-                </button>
-              ))}
+              {WEIGHT_INCREMENT_OPTIONS.map((inc) => {
+                const disp = toDisplayWeight(inc, weightUnit);
+                return (
+                  <button
+                    key={inc}
+                    type="button"
+                    onClick={() => setWeightIncrement(inc)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition ${
+                      weightIncrement === inc
+                        ? 'bg-emerald-500 text-zinc-950 border-emerald-500'
+                        : 'bg-[var(--bg)] text-[var(--fg-soft)] border-[var(--border)]'
+                    }`}
+                  >
+                    +{disp % 1 === 0 ? disp : disp.toFixed(1)} {unitLabel}
+                  </button>
+                );
+              })}
             </div>
             <input
               type="number"
               step="0.25"
               inputMode="decimal"
-              value={weightIncrement}
-              onChange={(e) => setWeightIncrement(Number(e.target.value))}
+              value={incrementDisplay}
+              onChange={(e) => setWeightIncrement(toKg(Number(e.target.value), weightUnit))}
               className="w-full px-3.5 py-2.5 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--fg-strong)]"
             />
           </div>

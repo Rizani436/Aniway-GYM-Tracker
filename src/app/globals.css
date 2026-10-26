@@ -83,6 +83,20 @@
   input[type='number'] {
     -moz-appearance: textfield;
   }
+
+  /*
+   * Kontras aksen di tema terang (hasil pengukuran WCAG, scripts/check-light-contrast.cjs):
+   * emerald-400 (1.81), emerald-300, amber-300 (1.36), sky-300 (1.57), rose-400 (2.53)
+   * sebagai WARNA TEKS di atas latar terang gagal total (butuh >= 4.5). Kelas-kelas
+   * itu dipakai 90+ kali di seluruh komponen, jadi tidak diganti satu-satu —
+   * di-override di sini: khusus properti `color`, aksen jadi gelap saat tema
+   * terang. Latar/border/emerald-500 sebagai bg (mis. tombol) tidak tersentuh.
+   */
+  :root:not(.dark) .text-emerald-400 { color: #047857; } /* emerald-700: 5.15:1 */
+  :root:not(.dark) .text-emerald-300 { color: #047857; }
+  :root:not(.dark) .text-amber-300   { color: #b45309; } /* amber-700: 4.72:1 */
+  :root:not(.dark) .text-sky-300     { color: #0369a1; } /* sky-700: 5.89:1 */
+  :root:not(.dark) .text-rose-400    { color: #be123c; } /* rose-700: 5.91:1 */
 }
 
 @layer utilities {

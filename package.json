@@ -13,7 +13,9 @@
     "db:studio": "prisma studio",
     "check:updaters": "node scripts/check-pure-updaters.cjs",
     "test:workout": "node scripts/check-pure-updaters.cjs && node scripts/test-pure-updater-behavior.cjs && node scripts/test-rest-timer-add.cjs && node scripts/test-workout-accordion.cjs && node scripts/test-warmup-volume.cjs",
-    "test:db": "tsx scripts/test-db-retry.ts"
+    "test:db": "tsx scripts/test-db-retry.ts",
+    "test:plate": "tsx scripts/test-plate-calculator.ts",
+    "test:contrast": "node scripts/test-light-theme-contrast.cjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

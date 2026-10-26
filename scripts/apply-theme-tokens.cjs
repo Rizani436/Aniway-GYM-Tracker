@@ -1,5 +1,8 @@
 /**
+ * [ARSIP — JANGAN DIJALANKAN LAGI]
  * Migrasi warna hardcode -> token tema (sekali jalan, idempoten-ish).
+ * Sudah dieksekusi seluruhnya; disimpan hanya sebagai dokumentasi pola
+ * migrasi. Menjalankan ulang = no-op, tapi jangan diandalkan untuk tema baru.
  *
  * Membaca semua file .tsx/.ts di src/ dan mengganti kelas warna gelap yang
  * hardcode dengan token CSS (`var(--bg)`, dst). globals.css (definisi token)

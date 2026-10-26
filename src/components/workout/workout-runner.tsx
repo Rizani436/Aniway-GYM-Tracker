@@ -375,7 +375,7 @@ export function WorkoutRunner({
           id: user.id,
           name: user.name,
           email: user.email ?? '',
-          weightUnit: user.weightUnit ?? 'kg',
+          weightUnit: user.weightUnit ?? 'KG',
           defaultRestTimer: user.defaultRestTimer,
         },
         selectedProgram: initialProgram,
@@ -874,7 +874,7 @@ export function WorkoutRunner({
           <span className="font-mono text-[var(--fg-soft)] tabular-nums">
             {Math.round(toDisplayWeight(liveVolume, unit)).toLocaleString('id-ID')} {unitLabel}
           </span>
-          <PlateCalculatorSheet className="ml-auto w-9 h-9 rounded-lg bg-transparent border-transparent text-[var(--muted)]" />
+          <PlateCalculatorSheet unit={unit} className="ml-auto w-9 h-9 rounded-lg bg-transparent border-transparent text-[var(--muted)]" />
           <button
             type="button"
             onClick={() => setIsProgramPickerOpen(true)}

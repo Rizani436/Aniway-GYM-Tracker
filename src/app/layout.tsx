@@ -16,14 +16,25 @@ export const metadata: Metadata = {
   },
 };
 
-export const viewport: Viewport = {
-  themeColor: '#08090a',
-  width: 'device-width',
-  initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
-  viewportFit: 'cover',
-};
+// Warna status bar mengikuti tema user (dulu hardcode gelap: di mode terang
+// status bar HP tetap hitam padahal halaman putih).
+export async function generateViewport(): Promise<Viewport> {
+  let themeColor = '#08090a'; // gelap = default identitas app
+  try {
+    const user = await getAuthenticatedUser();
+    if (user?.theme === 'LIGHT') themeColor = '#f7f8f8';
+  } catch {
+    // DB/auth tak terjangkau: pakai warna tema gelap default.
+  }
+  return {
+    themeColor,
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+    viewportFit: 'cover',
+  };
+}
 
 export default async function RootLayout({
   children,

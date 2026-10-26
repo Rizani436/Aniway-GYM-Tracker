@@ -694,6 +694,7 @@ export function LatihanTabsClient({
         isOpen={isExerciseModalOpen}
         onClose={() => setIsExerciseModalOpen(false)}
         userId={userId}
+        weightUnit={weightUnit}
       />
     </div>
   );
