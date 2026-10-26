@@ -41,6 +41,14 @@ export const programExerciseSchema = z
       .int()
       .min(10, 'Minimal 10 detik')
       .max(600, 'Maksimal 600 detik'),
+    // Target 1RM estimasi dalam satuan TAMPILAN user; dikonversi ke kg kanonik
+    // oleh pemanggil (action) sebelum disimpan. Null/kosong = tanpa target.
+    target1RM: z.coerce
+      .number()
+      .min(10, 'Target 1RM minimal 10')
+      .max(1000, 'Target 1RM maksimal 1000')
+      .optional()
+      .nullable(),
     notes: z.string().max(250).optional().nullable(),
   })
   .refine((data) => data.targetRepMax >= data.targetRepMin, {

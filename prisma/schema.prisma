@@ -125,6 +125,7 @@ model ProgramExercise {
   targetRepMin  Int      @default(8)
   targetRepMax  Int      @default(12)
   restSeconds   Int      @default(90)
+  target1RM     Float?   // Target 1RM estimasi (kg kanonik) — nullable = tidak ada target
   notes         String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
