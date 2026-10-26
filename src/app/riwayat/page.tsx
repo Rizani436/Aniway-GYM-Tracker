@@ -1,5 +1,6 @@
 import { getRiwayatDataAction } from '@/app/actions/riwayat-actions';
 import { RiwayatClient } from '@/components/riwayat/riwayat-client';
+import { getAuthenticatedUser } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 
 export const metadata = {
@@ -15,14 +16,17 @@ export default async function RiwayatPage() {
     redirect('/login');
   }
 
+  const user = await getAuthenticatedUser().catch(() => null);
+
   return (
-    <main className="min-h-screen bg-zinc-950 text-zinc-100 px-4 pt-6">
+    <main className="min-h-screen bg-[var(--bg)] text-[var(--fg-strong)] px-4 pt-6">
       <RiwayatClient
         initialSessions={data.sessions}
         stats={data.stats}
         heatmapData={data.heatmapData}
         availableExercises={data.availableExercises}
         programJatuhTempo={data.programJatuhTempo}
+        weightUnit={user?.weightUnit}
       />
     </main>
   );

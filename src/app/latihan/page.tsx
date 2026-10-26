@@ -15,11 +15,12 @@ export default async function LatihanPage() {
   ]);
 
   return (
-    <main className="min-h-screen bg-zinc-950 text-zinc-100 pb-24 max-w-md mx-auto px-4 pt-6">
+    <main className="min-h-screen bg-[var(--bg)] text-[var(--fg-strong)] pb-24 max-w-md mx-auto px-4 pt-6">
       <LatihanTabsClient
         initialPrograms={programs}
         initialExercises={exercises}
         userId={user?.id ?? ''}
+        weightUnit={user?.weightUnit}
       />
     </main>
   );

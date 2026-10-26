@@ -4,6 +4,7 @@ import { memo, useState } from 'react';
 import { SetType } from '@prisma/client';
 import { Check, Trash2, Plus, Minus, History, Sigma } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toKg, roundWeight, weightUnitLabel } from '@/lib/units';
 
 const RPE_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
@@ -47,6 +48,8 @@ interface ExerciseSetRowProps {
   weightIncrement: number;
   /** Set berikutnya yang belum dicentang — ditandai garis emerald. */
   isActive?: boolean;
+  /** Satuan tampilan user ('KG' | 'LB'); nilai state tetap kanonik KG. */
+  weightUnit?: string;
   onChange: (updated: Partial<SetRowData>) => void;
   onToggleComplete: () => void;
   onDelete: () => void;
@@ -58,6 +61,7 @@ export const ExerciseSetRow = memo(function ExerciseSetRow({
   index,
   weightIncrement,
   isActive = false,
+  weightUnit,
   onChange,
   onToggleComplete,
   onDelete,
@@ -118,7 +122,7 @@ export const ExerciseSetRow = memo(function ExerciseSetRow({
         'py-1.5 px-1.5 rounded-xl transition-colors duration-150 border',
         set.isCompleted
           ? 'bg-emerald-500/[0.08] border-emerald-500/30 text-emerald-100'
-          : 'bg-white/[0.03] border-white/[0.07] text-zinc-200',
+          : 'bg-[var(--card)] border-[var(--border)] text-[var(--fg-strong)]',
         // Set yang sedang dikerjakan: garis emerald tipis, tanpa mengubah isi.
         !set.isCompleted && isActive && 'border-emerald-400/40 bg-emerald-500/[0.04]'
       )}
@@ -132,7 +136,7 @@ export const ExerciseSetRow = memo(function ExerciseSetRow({
           set.setType === SetType.WARMUP && 'bg-amber-500/20 text-amber-300 border border-amber-500/30',
           set.setType === SetType.DROPSET && 'bg-purple-500/20 text-purple-300 border border-purple-500/30',
           set.setType === SetType.FAILURE && 'bg-rose-500/20 text-rose-300 border border-rose-500/30',
-          set.setType === SetType.NORMAL && 'bg-white/[0.06] text-zinc-300'
+          set.setType === SetType.NORMAL && 'bg-[var(--card-hover)] text-[var(--fg-soft)]'
         )}
         title={`Set ${index + 1} — ${setTypeLabel()}. Klik untuk ganti jenis set (Normal / Pemanasan / Dropset / Failure).`}
         aria-label={`Set ${index + 1}, jenis ${setTypeLabel()}. Ganti jenis set.`}
@@ -145,29 +149,29 @@ export const ExerciseSetRow = memo(function ExerciseSetRow({
         <button
           type="button"
           onClick={() => stepWeight(-1)}
-          className="w-7 max-[380px]:w-6 h-9 rounded-lg bg-white/[0.05] text-zinc-300 flex items-center justify-center active:scale-90 active:bg-white/[0.12] shrink-0 transition-transform touch-manipulation"
+          className="w-7 max-[380px]:w-6 h-9 rounded-lg bg-[var(--card-hover)] text-[var(--fg-soft)] flex items-center justify-center active:scale-90 active:bg-[var(--card-hover)] shrink-0 transition-transform touch-manipulation"
           aria-label="Kurangi beban"
         >
           <Minus className="w-3.5 h-3.5" />
         </button>
         <input
           type="number"
-          step={weightIncrement || 2.5}
+          step={roundWeight(weightIncrement || 2.5, weightUnit) || 0.1}
           min="0"
           inputMode="decimal"
-          value={set.weight === 0 ? '' : set.weight}
+          value={set.weight === 0 ? '' : roundWeight(set.weight, weightUnit)}
           placeholder="0"
-          aria-label={`Beban set ${index + 1} dalam kilogram`}
+          aria-label={`Beban set ${index + 1} dalam ${weightUnitLabel(weightUnit)}`}
           onChange={(e) => {
             const val = parseFloat(e.target.value);
-            onChange({ weight: isNaN(val) ? 0 : val });
+            onChange({ weight: isNaN(val) ? 0 : toKg(val, weightUnit) });
           }}
-          className="w-full min-w-0 h-9 px-0.5 text-center bg-black/40 border border-white/[0.08] rounded-lg text-[13px] font-bold font-mono text-white tabular-nums focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/40 transition-colors"
+          className="w-full min-w-0 h-9 px-0.5 text-center bg-[var(--input)] border border-[var(--border)] rounded-lg text-[13px] font-bold font-mono text-[var(--fg)] tabular-nums focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/40 transition-colors"
         />
         <button
           type="button"
           onClick={() => stepWeight(1)}
-          className="w-7 max-[380px]:w-6 h-9 rounded-lg bg-white/[0.05] text-zinc-300 flex items-center justify-center active:scale-90 active:bg-white/[0.12] shrink-0 transition-transform touch-manipulation"
+          className="w-7 max-[380px]:w-6 h-9 rounded-lg bg-[var(--card-hover)] text-[var(--fg-soft)] flex items-center justify-center active:scale-90 active:bg-[var(--card-hover)] shrink-0 transition-transform touch-manipulation"
           aria-label="Tambah beban"
         >
           <Plus className="w-3.5 h-3.5" />
@@ -177,7 +181,7 @@ export const ExerciseSetRow = memo(function ExerciseSetRow({
       {/* Repetisi (Reps) + Quick Steppers — di layar <340px turun ke baris 2 */}
       <div className="flex items-center gap-0.5 min-w-0 max-[340px]:col-start-2 max-[340px]:col-end-4 max-[340px]:row-start-2">
         <span
-          className="hidden max-[340px]:block text-[9px] font-bold uppercase tracking-wider text-zinc-500 shrink-0 pr-0.5"
+          className="hidden max-[340px]:block text-[9px] font-bold uppercase tracking-wider text-[var(--muted-strong)] shrink-0 pr-0.5"
           aria-hidden="true"
         >
           Reps
@@ -185,7 +189,7 @@ export const ExerciseSetRow = memo(function ExerciseSetRow({
         <button
           type="button"
           onClick={() => stepReps(-1)}
-          className="w-7 max-[380px]:w-6 h-9 rounded-lg bg-white/[0.05] text-zinc-300 flex items-center justify-center active:scale-90 active:bg-white/[0.12] shrink-0 transition-transform touch-manipulation"
+          className="w-7 max-[380px]:w-6 h-9 rounded-lg bg-[var(--card-hover)] text-[var(--fg-soft)] flex items-center justify-center active:scale-90 active:bg-[var(--card-hover)] shrink-0 transition-transform touch-manipulation"
           aria-label={`Kurangi repetisi set ${index + 1}`}
         >
           <Minus className="w-3.5 h-3.5" />
@@ -202,12 +206,12 @@ export const ExerciseSetRow = memo(function ExerciseSetRow({
             const val = parseInt(e.target.value, 10);
             onChange({ reps: isNaN(val) ? 0 : val });
           }}
-          className="w-full min-w-0 h-9 px-0.5 text-center bg-black/40 border border-white/[0.08] rounded-lg text-[13px] font-bold font-mono text-white tabular-nums focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/40 transition-colors"
+          className="w-full min-w-0 h-9 px-0.5 text-center bg-[var(--input)] border border-[var(--border)] rounded-lg text-[13px] font-bold font-mono text-[var(--fg)] tabular-nums focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/40 transition-colors"
         />
         <button
           type="button"
           onClick={() => stepReps(1)}
-          className="w-7 max-[380px]:w-6 h-9 rounded-lg bg-white/[0.05] text-zinc-300 flex items-center justify-center active:scale-90 active:bg-white/[0.12] shrink-0 transition-transform touch-manipulation"
+          className="w-7 max-[380px]:w-6 h-9 rounded-lg bg-[var(--card-hover)] text-[var(--fg-soft)] flex items-center justify-center active:scale-90 active:bg-[var(--card-hover)] shrink-0 transition-transform touch-manipulation"
           aria-label="Tambah repetisi"
         >
           <Plus className="w-3.5 h-3.5" />
@@ -222,7 +226,7 @@ export const ExerciseSetRow = memo(function ExerciseSetRow({
           'w-9 h-9 rounded-lg flex items-center justify-center transition-all active:scale-90 touch-manipulation max-[340px]:col-start-3 max-[340px]:row-start-1',
           set.isCompleted
             ? 'bg-emerald-400 text-zinc-950 shadow-[0_0_14px_rgba(52,211,153,0.55)]'
-            : 'bg-white/[0.06] text-zinc-400'
+            : 'bg-[var(--card-hover)] text-[var(--muted)]'
         )}
         title={set.isCompleted ? 'Batalkan selesai' : 'Tandai set selesai'}
         aria-label={set.isCompleted ? 'Batalkan selesai' : 'Tandai set selesai'}
@@ -251,11 +255,11 @@ export const ExerciseSetRow = memo(function ExerciseSetRow({
           <button
             type="button"
             onClick={() => onChange({ weight: set.previousRecord!.weight, reps: set.previousRecord!.reps })}
-            className="inline-flex items-center gap-1 text-[10px] font-mono font-semibold text-zinc-400 tabular-nums active:text-emerald-300 transition-colors touch-manipulation"
+            className="inline-flex items-center gap-1 text-[10px] font-mono font-semibold text-[var(--muted)] tabular-nums active:text-emerald-300 transition-colors touch-manipulation"
             title="Sesi sebelumnya — tap untuk isi beban & repetisi"
           >
-            <History className="w-3 h-3 text-zinc-500 shrink-0" />
-            {set.previousRecord.weight}×{set.previousRecord.reps}
+            <History className="w-3 h-3 text-[var(--muted-strong)] shrink-0" />
+            {roundWeight(set.previousRecord.weight, weightUnit)}×{set.previousRecord.reps}
           </button>
         )}
 
@@ -268,7 +272,7 @@ export const ExerciseSetRow = memo(function ExerciseSetRow({
             title="Rata-rata 3 sesi terakhir — tap untuk isi beban & repetisi"
           >
             <Sigma className="w-3 h-3 text-sky-400/60 shrink-0" />
-            Rata {set.avgRecord.weight}×{set.avgRecord.reps}
+            Rata {roundWeight(set.avgRecord.weight, weightUnit)}×{set.avgRecord.reps}
           </button>
         )}
 
@@ -280,7 +284,7 @@ export const ExerciseSetRow = memo(function ExerciseSetRow({
             'w-12 h-6 rounded-md text-[10px] font-bold font-mono flex items-center justify-center shrink-0 transition-colors active:scale-95 touch-manipulation',
             set.rpe
               ? 'bg-sky-500/15 text-sky-300 border border-sky-500/30'
-              : 'bg-white/[0.05] text-zinc-500 border border-transparent'
+              : 'bg-[var(--card-hover)] text-[var(--muted-strong)] border border-transparent'
           )}
           title="RPE — tingkat kesulitan set (1–10)"
           aria-label={set.rpe ? `RPE ${set.rpe}, ubah` : 'Set RPE'}
@@ -293,7 +297,7 @@ export const ExerciseSetRow = memo(function ExerciseSetRow({
           <button
             type="button"
             onClick={onDelete}
-            className="ml-auto w-7 h-6 text-zinc-600 flex items-center justify-center active:text-rose-400 shrink-0 transition-colors touch-manipulation"
+            className="ml-auto w-7 h-6 text-[var(--muted-strong)] flex items-center justify-center active:text-rose-400 shrink-0 transition-colors touch-manipulation"
             title="Hapus set ini"
             aria-label={`Hapus set ${index + 1}`}
           >
@@ -305,7 +309,7 @@ export const ExerciseSetRow = memo(function ExerciseSetRow({
       {/* Popover RPE — grid 1–10 + kosongkan; col-span-full = baris baru penuh lebar */}
       {isRpeOpen && (
         <div className="col-span-full pt-1.5 pb-0.5">
-          <div className="grid grid-cols-5 gap-1.5 p-2 bg-black/40 border border-white/[0.08] rounded-xl">
+          <div className="grid grid-cols-5 gap-1.5 p-2 bg-[var(--input)] border border-[var(--border)] rounded-xl">
             {RPE_OPTIONS.map((n) => (
               <button
                 key={n}
@@ -318,7 +322,7 @@ export const ExerciseSetRow = memo(function ExerciseSetRow({
                   'h-9 rounded-lg text-xs font-bold font-mono transition-colors touch-manipulation',
                   set.rpe === n
                     ? 'bg-sky-500 text-zinc-950'
-                    : 'bg-white/[0.06] text-zinc-300 active:bg-white/[0.14]'
+                    : 'bg-[var(--card-hover)] text-[var(--fg-soft)] active:bg-[var(--card-hover)]'
                 )}
               >
                 {n}
@@ -330,7 +334,7 @@ export const ExerciseSetRow = memo(function ExerciseSetRow({
                 onChange({ rpe: null });
                 setIsRpeOpen(false);
               }}
-              className="h-9 rounded-lg text-[10px] font-bold bg-white/[0.04] text-zinc-500 active:bg-white/[0.1] touch-manipulation"
+              className="h-9 rounded-lg text-[10px] font-bold bg-[var(--card)] text-[var(--muted-strong)] active:bg-[var(--card-hover)] touch-manipulation"
             >
               Kosong
             </button>

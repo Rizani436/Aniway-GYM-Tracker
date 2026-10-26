@@ -40,6 +40,7 @@ import {
 } from '@/app/actions/latihan-actions';
 import { MUSCLE_LABELS, EQUIPMENT_LABELS } from '@/lib/constants';
 import { ExerciseFormModal } from './exercise-form-modal';
+import { roundWeight, weightUnitLabel } from '@/lib/units';
 
 type ProgramDetailType = Awaited<ReturnType<typeof getProgramByIdAction>>;
 type AllExercisesType = Awaited<ReturnType<typeof getExercisesAction>>;
@@ -50,6 +51,7 @@ function SortableProgramExerciseItem({
   accentColor,
   onUpdate,
   onRemove,
+  weightUnit,
 }: {
   item: ProgramDetailType['exercises'][number];
   index: number;
@@ -65,6 +67,7 @@ function SortableProgramExerciseItem({
     }
   ) => void;
   onRemove: (id: string) => void;
+  weightUnit?: string;
 }) {
   const {
     attributes,
@@ -91,7 +94,7 @@ function SortableProgramExerciseItem({
     <div
       ref={setNodeRef}
       style={style}
-      className={`p-4 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-3 ${
+      className={`p-4 rounded-2xl bg-[var(--surface)] border border-[var(--border)] space-y-3 ${
         isDragging ? 'opacity-75 scale-[1.02] z-30 shadow-2xl' : ''
       }`}
     >
@@ -100,7 +103,7 @@ function SortableProgramExerciseItem({
           type="button"
           {...attributes}
           {...listeners}
-          className="mt-0.5 p-1.5 rounded-lg text-zinc-500 hover:text-zinc-200 touch-none"
+          className="mt-0.5 p-1.5 rounded-lg text-[var(--muted-strong)] hover:text-[var(--fg-strong)] touch-none"
         >
           <GripVertical className="w-5 h-5" />
         </button>
@@ -109,7 +112,7 @@ function SortableProgramExerciseItem({
           <div className="flex items-center justify-between gap-2">
             <Link
               href={`/latihan/gerakan/${item.exercise.id}`}
-              className="font-bold text-sm text-zinc-100 hover:text-emerald-400 flex items-center gap-1.5"
+              className="font-bold text-sm text-[var(--fg-strong)] hover:text-emerald-400 flex items-center gap-1.5"
             >
               <span
                 style={{ color: accentColor }}
@@ -118,29 +121,29 @@ function SortableProgramExerciseItem({
                 #{index + 1}
               </span>
               {item.exercise.name}
-              <ExternalLink className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+              <ExternalLink className="w-3.5 h-3.5 text-[var(--muted-strong)] shrink-0" />
             </Link>
 
             <button
               type="button"
               onClick={() => onRemove(item.id)}
-              className="p-1.5 rounded-lg text-zinc-500 hover:text-red-400"
+              className="p-1.5 rounded-lg text-[var(--muted-strong)] hover:text-red-400"
               title="Hapus gerakan dari program"
             >
               <Trash2 className="w-4 h-4" />
             </button>
           </div>
-          <p className="text-xs text-zinc-400 mt-0.5">
+          <p className="text-xs text-[var(--muted)] mt-0.5">
             {MUSCLE_LABELS[item.exercise.primaryMuscle]} •{' '}
             {EQUIPMENT_LABELS[item.exercise.equipment]} (+
-            {item.exercise.weightIncrement} kg)
+            {roundWeight(item.exercise.weightIncrement, weightUnit)} {weightUnitLabel(weightUnit)})
           </p>
         </div>
       </div>
 
       <div className="grid grid-cols-4 gap-2 pt-1">
         <div>
-          <label className="block text-[10px] uppercase text-zinc-400 mb-1">
+          <label className="block text-[10px] uppercase text-[var(--muted)] mb-1">
             Target Set
           </label>
           <input
@@ -153,12 +156,12 @@ function SortableProgramExerciseItem({
               setSets(Number(e.target.value));
               setIsDirty(true);
             }}
-            className="w-full px-2.5 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-center font-bold text-sm"
+            className="w-full px-2.5 py-2 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-center font-bold text-sm"
           />
         </div>
 
         <div>
-          <label className="block text-[10px] uppercase text-zinc-400 mb-1">
+          <label className="block text-[10px] uppercase text-[var(--muted)] mb-1">
             Rep Min
           </label>
           <input
@@ -171,12 +174,12 @@ function SortableProgramExerciseItem({
               setRepMin(Number(e.target.value));
               setIsDirty(true);
             }}
-            className="w-full px-2.5 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-center font-bold text-sm"
+            className="w-full px-2.5 py-2 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-center font-bold text-sm"
           />
         </div>
 
         <div>
-          <label className="block text-[10px] uppercase text-zinc-400 mb-1">
+          <label className="block text-[10px] uppercase text-[var(--muted)] mb-1">
             Rep Max
           </label>
           <input
@@ -189,12 +192,12 @@ function SortableProgramExerciseItem({
               setRepMax(Number(e.target.value));
               setIsDirty(true);
             }}
-            className="w-full px-2.5 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-center font-bold text-sm"
+            className="w-full px-2.5 py-2 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-center font-bold text-sm"
           />
         </div>
 
         <div>
-          <label className="block text-[10px] uppercase text-zinc-400 mb-1 flex items-center gap-0.5">
+          <label className="block text-[10px] uppercase text-[var(--muted)] mb-1 flex items-center gap-0.5">
             <Clock className="w-3 h-3" /> Istirahat(d)
           </label>
           <input
@@ -208,7 +211,7 @@ function SortableProgramExerciseItem({
               setRestSec(Number(e.target.value));
               setIsDirty(true);
             }}
-            className="w-full px-2.5 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-center font-bold text-sm"
+            className="w-full px-2.5 py-2 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-center font-bold text-sm"
           />
         </div>
       </div>
@@ -222,7 +225,7 @@ function SortableProgramExerciseItem({
             setIsDirty(true);
           }}
           placeholder="Catatan setelan kursi / pin (contoh: Kursi no 4)..."
-          className="flex-1 px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-zinc-200"
+          className="flex-1 px-3 py-2 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-xs text-[var(--fg-strong)]"
         />
 
         {isDirty && (
@@ -253,10 +256,12 @@ export function ProgramDetailClient({
   initialProgram,
   allExercises,
   userId = '',
+  weightUnit,
 }: {
   initialProgram: ProgramDetailType;
   allExercises: AllExercisesType;
   userId?: string;
+  weightUnit?: string;
 }) {
   const queryClient = useQueryClient();
   const [isPickerOpen, setIsPickerOpen] = useState(false);
@@ -358,7 +363,7 @@ export function ProgramDetailClient({
       <div className="flex items-center justify-between">
         <Link
           href="/latihan"
-          className="inline-flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-100"
+          className="inline-flex items-center gap-2 text-sm text-[var(--muted)] hover:text-[var(--fg-strong)]"
         >
           <ArrowLeft className="w-4 h-4" />
           Kembali ke Master Latihan
@@ -366,18 +371,18 @@ export function ProgramDetailClient({
       </div>
 
       <div
-        className="p-5 rounded-2xl bg-zinc-900 border border-zinc-800"
+        className="p-5 rounded-2xl bg-[var(--surface)] border border-[var(--border)]"
         style={{ borderTopWidth: '4px', borderTopColor: program.color }}
       >
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h1 className="text-xl font-bold text-zinc-100">{program.name}</h1>
+            <h1 className="text-xl font-bold text-[var(--fg-strong)]">{program.name}</h1>
             {program.description && (
-              <p className="text-xs text-zinc-400 mt-1">
+              <p className="text-xs text-[var(--muted)] mt-1">
                 {program.description}
               </p>
             )}
-            <p className="text-xs text-zinc-500 mt-2">
+            <p className="text-xs text-[var(--muted-strong)] mt-2">
               {program.exercises.length} gerakan • Geser ikon titik-titik untuk
               mengatur urutan
             </p>
@@ -395,11 +400,11 @@ export function ProgramDetailClient({
       </div>
 
       {program.exercises.length === 0 ? (
-        <div className="text-center py-12 px-4 rounded-2xl bg-zinc-900/50 border border-zinc-800">
-          <p className="font-semibold text-zinc-200">
+        <div className="text-center py-12 px-4 rounded-2xl bg-[var(--surface)] border border-[var(--border)]">
+          <p className="font-semibold text-[var(--fg-strong)]">
             Program Ini Masih Kosong
           </p>
-          <p className="text-xs text-zinc-400 mt-1 mb-4">
+          <p className="text-xs text-[var(--muted)] mt-1 mb-4">
             Tambahkan gerakan dari pustaka 40 gerakan mesin atau buat gerakan
             baru.
           </p>
@@ -433,6 +438,7 @@ export function ProgramDetailClient({
                     updateMutation.mutate({ id, payload })
                   }
                   onRemove={(id) => removeMutation.mutate(id)}
+                  weightUnit={weightUnit}
                 />
               ))}
             </div>
@@ -444,7 +450,7 @@ export function ProgramDetailClient({
         <button
           type="button"
           onClick={() => setIsPickerOpen(true)}
-          className="py-3.5 px-3 rounded-2xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-100 font-bold text-xs flex items-center justify-center gap-1.5"
+          className="py-3.5 px-3 rounded-2xl bg-[var(--surface)] hover:bg-[var(--surface-2)] border border-[var(--border)] text-[var(--fg-strong)] font-bold text-xs flex items-center justify-center gap-1.5"
         >
           <Plus className="w-4 h-4 text-emerald-400" />
           Pilih dari Pustaka
@@ -462,29 +468,29 @@ export function ProgramDetailClient({
 
       {isPickerOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center">
-          <div className="bg-zinc-900 border-t sm:border border-zinc-800 w-full max-w-md max-h-[85vh] rounded-t-3xl sm:rounded-2xl flex flex-col overflow-hidden">
-            <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
+          <div className="bg-[var(--surface)] border-t sm:border border-[var(--border)] w-full max-w-md max-h-[85vh] rounded-t-3xl sm:rounded-2xl flex flex-col overflow-hidden">
+            <div className="p-4 border-b border-[var(--border)] flex items-center justify-between">
               <h3 className="font-bold text-base">
                 Tambah Gerakan ke {program.name}
               </h3>
               <button
                 type="button"
                 onClick={() => setIsPickerOpen(false)}
-                className="text-xs font-semibold text-zinc-400 px-3 py-1.5 rounded-lg bg-zinc-800"
+                className="text-xs font-semibold text-[var(--muted)] px-3 py-1.5 rounded-lg bg-[var(--surface-2)]"
               >
                 Tutup
               </button>
             </div>
 
-            <div className="p-3 border-b border-zinc-800 space-y-2">
+            <div className="p-3 border-b border-[var(--border)] space-y-2">
               <div className="relative">
-                <Search className="w-4 h-4 text-zinc-500 absolute left-3.5 top-3" />
+                <Search className="w-4 h-4 text-[var(--muted-strong)] absolute left-3.5 top-3" />
                 <input
                   type="text"
                   value={pickerSearch}
                   onChange={(e) => setPickerSearch(e.target.value)}
                   placeholder="Cari gerakan..."
-                  className="w-full pl-10 pr-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-sm"
+                  className="w-full pl-10 pr-4 py-2.5 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-sm"
                 />
               </div>
               <button
@@ -507,13 +513,13 @@ export function ProgramDetailClient({
                 return (
                   <div
                     key={ex.id}
-                    className="p-3 rounded-xl bg-zinc-950 border border-zinc-800 flex items-center justify-between gap-2"
+                    className="p-3 rounded-xl bg-[var(--bg)] border border-[var(--border)] flex items-center justify-between gap-2"
                   >
                     <div>
-                      <p className="font-semibold text-sm text-zinc-100">
+                      <p className="font-semibold text-sm text-[var(--fg-strong)]">
                         {ex.name}
                       </p>
-                      <p className="text-[11px] text-zinc-400">
+                      <p className="text-[11px] text-[var(--muted)]">
                         {MUSCLE_LABELS[ex.primaryMuscle]} •{' '}
                         {EQUIPMENT_LABELS[ex.equipment]}
                       </p>
@@ -524,7 +530,7 @@ export function ProgramDetailClient({
                       onClick={() => addMutation.mutate(ex.id)}
                       className={`px-3 py-2 rounded-xl font-bold text-xs shrink-0 ${
                         alreadyInProgram
-                          ? 'bg-zinc-800 text-zinc-300'
+                          ? 'bg-[var(--surface-2)] text-[var(--fg-soft)]'
                           : 'bg-emerald-500 text-zinc-950'
                       }`}
                     >

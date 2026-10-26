@@ -5,12 +5,15 @@ import { format } from 'date-fns';
 import { X, Plus, Trash2, Calendar, Dumbbell, Clock, Check } from 'lucide-react';
 import { SetType } from '@prisma/client';
 import { createManualWorkoutSessionAction } from '@/app/actions/riwayat-actions';
+import { toKg, roundWeight, weightUnitLabel } from '@/lib/units';
 
 interface ManualSessionModalProps {
   isOpen: boolean;
   onClose: () => void;
   availableExercises: any[];
   onSuccess: () => void;
+  /** Satuan tampilan user ('KG' | 'LB'); nilai di DB tetap kanonik KG. */
+  weightUnit?: string;
 }
 
 interface ManualExerciseState {
@@ -28,6 +31,7 @@ export function ManualSessionModal({
   onClose,
   availableExercises,
   onSuccess,
+  weightUnit,
 }: ManualSessionModalProps) {
   const [name, setName] = useState('Latihan Gym');
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -140,19 +144,19 @@ export function ManualSessionModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
+        <div className="p-4 border-b border-[var(--border)] flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
               <Calendar className="w-4 h-4" />
             </div>
-            <h3 className="font-bold text-zinc-100 text-base">Catat Sesi Manual</h3>
+            <h3 className="font-bold text-[var(--fg-strong)] text-base">Catat Sesi Manual</h3>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800"
+            className="p-1.5 text-[var(--muted)] hover:text-[var(--fg)] rounded-lg hover:bg-[var(--surface-2)]"
           >
             <X className="w-5 h-5" />
           </button>
@@ -162,44 +166,44 @@ export function ManualSessionModal({
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2">
-              <label className="text-xs font-semibold text-zinc-400">Nama Sesi Latihan</label>
+              <label className="text-xs font-semibold text-[var(--muted)]">Nama Sesi Latihan</label>
               <input
                 type="text"
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Contoh: Push Day / Latihan Dada"
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-sm text-zinc-100 mt-1 focus:outline-none focus:border-emerald-500"
+                className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--fg-strong)] mt-1 focus:outline-none focus:border-emerald-500"
               />
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-zinc-400">Tanggal Latihan</label>
+              <label className="text-xs font-semibold text-[var(--muted)]">Tanggal Latihan</label>
               <input
                 type="date"
                 required
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-100 mt-1 focus:outline-none focus:border-emerald-500"
+                className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-xl px-3 py-2 text-xs text-[var(--fg-strong)] mt-1 focus:outline-none focus:border-emerald-500"
               />
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-zinc-400">Durasi (Menit)</label>
+              <label className="text-xs font-semibold text-[var(--muted)]">Durasi (Menit)</label>
               <input
                 type="number"
                 min="5"
                 max="300"
                 value={durationMin}
                 onChange={(e) => setDurationMin(Number(e.target.value))}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-100 mt-1 focus:outline-none focus:border-emerald-500"
+                className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-xl px-3 py-2 text-xs text-[var(--fg-strong)] mt-1 focus:outline-none focus:border-emerald-500"
               />
             </div>
           </div>
 
           {/* Tambah Gerakan Section */}
-          <div className="space-y-2 pt-2 border-t border-zinc-800">
-            <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block">
+          <div className="space-y-2 pt-2 border-t border-[var(--border)]">
+            <label className="text-xs font-bold uppercase tracking-wider text-[var(--muted)] block">
               Gerakan yang Dilakukan
             </label>
 
@@ -207,7 +211,7 @@ export function ManualSessionModal({
               <select
                 value={selectedExId}
                 onChange={(e) => setSelectedExId(e.target.value)}
-                className="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-emerald-500"
+                className="flex-1 bg-[var(--bg)] border border-[var(--border)] rounded-xl px-3 py-2 text-xs text-[var(--fg-strong)] focus:outline-none focus:border-emerald-500"
               >
                 <option value="">-- Pilih Gerakan / Mesin --</option>
                 {availableExercises.map((e) => (
@@ -219,7 +223,7 @@ export function ManualSessionModal({
               <button
                 type="button"
                 onClick={handleAddExercise}
-                className="px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-xl text-xs font-bold flex items-center gap-1 shrink-0"
+                className="px-3 py-2 bg-[var(--surface-2)] hover:bg-[var(--surface-3)] text-[var(--fg-strong)] rounded-xl text-xs font-bold flex items-center gap-1 shrink-0"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Tambah
@@ -232,14 +236,14 @@ export function ManualSessionModal({
             {exercises.map((ex, exIdx) => (
               <div
                 key={ex.exerciseId + exIdx}
-                className="bg-zinc-950/70 border border-zinc-800 rounded-xl p-3 space-y-2"
+                className="bg-[var(--bg)] border border-[var(--border)] rounded-xl p-3 space-y-2"
               >
                 <div className="flex items-center justify-between">
-                  <h4 className="font-bold text-xs text-zinc-100">{ex.name}</h4>
+                  <h4 className="font-bold text-xs text-[var(--fg-strong)]">{ex.name}</h4>
                   <button
                     type="button"
                     onClick={() => handleRemoveExercise(exIdx)}
-                    className="text-zinc-500 hover:text-rose-400 p-1"
+                    className="text-[var(--muted-strong)] hover:text-rose-400 p-1"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -248,21 +252,21 @@ export function ManualSessionModal({
                 <div className="space-y-1.5">
                   {ex.sets.map((s, sIdx) => (
                     <div key={sIdx} className="flex items-center gap-2 text-xs">
-                      <span className="w-6 text-zinc-500 font-mono">#{sIdx + 1}</span>
+                      <span className="w-6 text-[var(--muted-strong)] font-mono">#{sIdx + 1}</span>
                       <div className="flex items-center gap-1 flex-1">
                         <input
                           type="number"
                           step="0.5"
                           min="0"
-                          value={s.weight}
+                          value={roundWeight(s.weight, weightUnit)}
                           onChange={(e) =>
-                            handleUpdateSet(exIdx, sIdx, 'weight', parseFloat(e.target.value) || 0)
+                            handleUpdateSet(exIdx, sIdx, 'weight', toKg(parseFloat(e.target.value) || 0, weightUnit))
                           }
-                          className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-1 text-center font-mono text-zinc-100"
+                          className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg px-2 py-1 text-center font-mono text-[var(--fg-strong)]"
                         />
-                        <span className="text-[11px] text-zinc-500">kg</span>
+                        <span className="text-[11px] text-[var(--muted-strong)]">{weightUnitLabel(weightUnit)}</span>
                       </div>
-                      <span className="text-zinc-500">×</span>
+                      <span className="text-[var(--muted-strong)]">×</span>
                       <div className="flex items-center gap-1 flex-1">
                         <input
                           type="number"
@@ -272,15 +276,15 @@ export function ManualSessionModal({
                           onChange={(e) =>
                             handleUpdateSet(exIdx, sIdx, 'reps', parseInt(e.target.value, 10) || 0)
                           }
-                          className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-1 text-center font-mono text-zinc-100"
+                          className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg px-2 py-1 text-center font-mono text-[var(--fg-strong)]"
                         />
-                        <span className="text-[11px] text-zinc-500">rep</span>
+                        <span className="text-[11px] text-[var(--muted-strong)]">rep</span>
                       </div>
                       {ex.sets.length > 1 && (
                         <button
                           type="button"
                           onClick={() => handleRemoveSet(exIdx, sIdx)}
-                          className="text-zinc-600 hover:text-rose-400 p-1"
+                          className="text-[var(--muted-strong)] hover:text-rose-400 p-1"
                         >
                           <Trash2 className="w-3 h-3" />
                         </button>
@@ -302,13 +306,13 @@ export function ManualSessionModal({
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-zinc-400">Catatan Sesi (Opsional)</label>
+            <label className="text-xs font-semibold text-[var(--muted)]">Catatan Sesi (Opsional)</label>
             <textarea
               rows={2}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Kondisi fisik, fokus otot, dll..."
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-100 mt-1 resize-none focus:outline-none focus:border-emerald-500"
+              className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-xl px-3 py-2 text-xs text-[var(--fg-strong)] mt-1 resize-none focus:outline-none focus:border-emerald-500"
             />
           </div>
 

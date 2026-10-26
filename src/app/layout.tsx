@@ -3,6 +3,7 @@ import './globals.css';
 import { QueryProvider } from '@/providers/query-provider';
 import { BottomNav } from '@/components/layout/bottom-nav';
 import { RegisterSw } from '../components/pwa/register-sw';
+import { getAuthenticatedUser } from '@/lib/supabase/server';
 
 export const metadata: Metadata = {
   title: 'Aniway - Gym Tracker Indonesia',
@@ -24,13 +25,24 @@ export const viewport: Viewport = {
   viewportFit: 'cover',
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Tema dibaca dari preferensi user. Default gelap (sesuai identitas app).
+  // getAuthenticatedUser() di-cache React, jadi tidak menambah round-trip
+  // pada halaman yang juga memanggilnya.
+  let themeClass = 'dark';
+  try {
+    const user = await getAuthenticatedUser();
+    if (user?.theme === 'LIGHT') themeClass = '';
+  } catch {
+    // DB/auth tak terjangkau: tetap pakai tema gelap, jangan gagalkan render.
+  }
+
   return (
-    <html lang="id" className="dark">
+    <html lang="id" className={themeClass}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -39,7 +51,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="bg-[#08090a] text-[#f7f8f8] antialiased selection:bg-emerald-500 selection:text-zinc-950 font-sans">
+      <body className="bg-[var(--bg)] text-[var(--fg)] antialiased selection:bg-emerald-500 selection:text-zinc-950 font-sans">
         <QueryProvider>
           {children}
           <BottomNav />

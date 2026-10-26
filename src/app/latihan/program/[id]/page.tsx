@@ -25,11 +25,12 @@ export default async function ProgramDetailPage({
     ]);
 
     return (
-      <main className="min-h-screen bg-zinc-950 text-zinc-100 pb-28 max-w-md mx-auto px-4 pt-5">
+      <main className="min-h-screen bg-[var(--bg)] text-[var(--fg-strong)] pb-28 max-w-md mx-auto px-4 pt-5">
         <ProgramDetailClient
           initialProgram={program}
           allExercises={allExercises}
           userId={user?.id ?? ''}
+          weightUnit={user?.weightUnit}
         />
       </main>
     );

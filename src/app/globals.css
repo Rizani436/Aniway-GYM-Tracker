@@ -2,15 +2,61 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Sistem tema berbasis token CSS.
+ *
+ * `:root` = tema TERANG (default), `.dark` = tema GELAP (override).
+ * Root layout menetapkan `<html class="dark">` saat user memilih tema gelap.
+ * Komponen memakai token (`bg-[var(--bg)]`, `text-[var(--fg)]`, dst) sehingga
+ * pergantian tema cukup mengganti satu class di <html> tanpa menyentuh komponen.
+ */
 @layer base {
   :root {
+    color-scheme: light;
+
+    --bg: #f7f8f8;                 /* latar halaman */
+    --bg-soft: #ffffff;            /* permukaan elevasi (nav, gambar) */
+    --surface: #ffffff;            /* kartu / modal */
+    --surface-2: #eef0f2;          /* tombol sekunder / hover */
+    --surface-3: #e3e6e9;          /* tombol hover lebih kuat */
+    --fg: #0b0c0d;                 /* teks utama */
+    --fg-strong: #18181b;          /* judul */
+    --fg-soft: #3f3f46;            /* teks sekunder terang */
+    --muted: #52525b;              /* teks redup */
+    --muted-strong: #6b7280;       /* teks paling redup */
+    --border: rgba(15, 18, 20, 0.10);
+    --border-strong: rgba(15, 18, 20, 0.20);
+    --card: rgba(15, 18, 20, 0.04);        /* kartu glass */
+    --card-hover: rgba(15, 18, 20, 0.08);  /* kartu glass saat hover */
+    --input: rgba(15, 18, 20, 0.06);       /* inset input */
+    --hero-from: #e9f9f1;                  /* gradient kartu hero (aksen emerald) */
+    --hero-to: #f7f8f8;
+    --streak-from: #fdf6e3;                /* gradient kartu streak (aksen amber) */
+    --streak-to: #f7f8f8;
+  }
+
+  .dark {
     color-scheme: dark;
-    --background: 8 9 10;
-    --surface-1: 15 16 17;
-    --surface-2: 22 24 26;
-    --surface-3: 30 32 35;
-    --border-subtle: rgba(255, 255, 255, 0.06);
-    --border-hover: rgba(255, 255, 255, 0.12);
+
+    --bg: #08090a;
+    --bg-soft: #0f1011;
+    --surface: #121314;
+    --surface-2: #1b1d1f;
+    --surface-3: #272a2e;
+    --fg: #f7f8f8;
+    --fg-strong: #ffffff;
+    --fg-soft: #d4d4d8;
+    --muted: #a1a1aa;
+    --muted-strong: #71717a;
+    --border: rgba(255, 255, 255, 0.10);
+    --border-strong: rgba(255, 255, 255, 0.18);
+    --card: rgba(255, 255, 255, 0.03);
+    --card-hover: rgba(255, 255, 255, 0.07);
+    --input: rgba(0, 0, 0, 0.40);
+    --hero-from: #131715;
+    --hero-to: #0c0e0d;
+    --streak-from: #1b1508;
+    --streak-to: #120e06;
   }
 
   * {
@@ -18,8 +64,8 @@
   }
 
   body {
-    background-color: #08090a;
-    color: #f7f8f8;
+    background-color: var(--bg);
+    color: var(--fg);
     font-feature-settings: 'cv01' on, 'ss03' on, 'cv11' on;
     font-variant-numeric: tabular-nums;
     text-rendering: optimizeLegibility;
@@ -54,16 +100,16 @@
     scrollbar-width: none;
   }
   .glass-card {
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--card);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.07);
+    border: 1px solid var(--border);
   }
   .glass-card-elevated {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--card-hover);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--border);
   }
   .active-press {
     transition: transform 0.1s ease, opacity 0.1s ease;

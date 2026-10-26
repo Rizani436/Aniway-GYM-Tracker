@@ -40,7 +40,7 @@ export function PlateCalculatorSheet({ className }: { className?: string } = {})
         type="button"
         onClick={() => setIsOpen(true)}
         className={cn(
-          'w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-zinc-300 active:scale-90 transition-transform shrink-0 touch-manipulation',
+          'w-10 h-10 rounded-xl bg-[var(--card)] border border-[var(--border)] flex items-center justify-center text-[var(--fg-soft)] active:scale-90 transition-transform shrink-0 touch-manipulation',
           className
         )}
         aria-label="Kalkulator plat barbell"
@@ -55,18 +55,18 @@ export function PlateCalculatorSheet({ className }: { className?: string } = {})
           onClick={() => setIsOpen(false)}
         >
           <div
-            className="w-full rounded-t-3xl bg-[#0f1011] border-t border-white/[0.08] p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] space-y-4 animate-in slide-in-from-bottom"
+            className="w-full rounded-t-3xl bg-[var(--bg-soft)] border-t border-[var(--border)] p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] space-y-4 animate-in slide-in-from-bottom"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
-              <h2 className="font-bold text-white text-sm flex items-center gap-2">
+              <h2 className="font-bold text-[var(--fg)] text-sm flex items-center gap-2">
                 <Calculator className="w-4 h-4 text-emerald-400" />
                 Kalkulator Plat
               </h2>
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="w-9 h-9 rounded-lg bg-white/[0.05] flex items-center justify-center text-zinc-400 active:scale-90 transition-transform"
+                className="w-9 h-9 rounded-lg bg-[var(--card-hover)] flex items-center justify-center text-[var(--muted)] active:scale-90 transition-transform"
                 aria-label="Tutup"
               >
                 <X className="w-4 h-4" />
@@ -74,7 +74,7 @@ export function PlateCalculatorSheet({ className }: { className?: string } = {})
             </div>
 
             <div>
-              <label htmlFor="plate-weight" className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">
+              <label htmlFor="plate-weight" className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted)]">
                 Beban Total (kg)
               </label>
               <input
@@ -87,7 +87,7 @@ export function PlateCalculatorSheet({ className }: { className?: string } = {})
                 onChange={(e) => setWeight(e.target.value)}
                 placeholder="mis. 62.5"
                 autoFocus
-                className="mt-1.5 w-full h-11 px-3 bg-black/40 border border-white/[0.08] rounded-xl text-base font-bold font-mono text-white tabular-nums text-center focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/40"
+                className="mt-1.5 w-full h-11 px-3 bg-[var(--input)] border border-[var(--border)] rounded-xl text-base font-bold font-mono text-[var(--fg)] tabular-nums text-center focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/40"
               />
             </div>
 
@@ -98,14 +98,14 @@ export function PlateCalculatorSheet({ className }: { className?: string } = {})
             )}
 
             {!result.error && result.plates && result.plates.length === 0 && (
-              <p className="text-xs text-zinc-400 bg-white/[0.03] border border-white/[0.08] rounded-xl p-3">
+              <p className="text-xs text-[var(--muted)] bg-[var(--card)] border border-[var(--border)] rounded-xl p-3">
                 Lebih ringan dari bar ({BAR_WEIGHT} kg) — pakai bar saja atau bar + plat kecil.
               </p>
             )}
 
             {counts.length > 0 && (
               <div>
-                <p className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-2">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted)] mb-2">
                   Tiap sisi
                 </p>
                 <div className="flex flex-wrap gap-1.5">
@@ -118,7 +118,7 @@ export function PlateCalculatorSheet({ className }: { className?: string } = {})
                     </span>
                   ))}
                 </div>
-                <p className="mt-2 text-[11px] text-zinc-500 font-mono tabular-nums">
+                <p className="mt-2 text-[11px] text-[var(--muted-strong)] font-mono tabular-nums">
                   Bar {BAR_WEIGHT} kg + plat per sisi = {weight} kg
                 </p>
               </div>

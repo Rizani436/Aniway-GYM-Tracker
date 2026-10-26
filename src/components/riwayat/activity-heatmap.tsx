@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { format, subDays, eachDayOfInterval } from 'date-fns';
 import { id } from 'date-fns/locale';
+import { toDisplayWeight, weightUnitLabel } from '@/lib/units';
 
 interface ActivityHeatmapProps {
   data: Array<{
@@ -10,9 +11,10 @@ interface ActivityHeatmapProps {
     count: number;
     volume: number;
   }>;
+  weightUnit?: string;
 }
 
-export function ActivityHeatmap({ data }: ActivityHeatmapProps) {
+export function ActivityHeatmap({ data, weightUnit }: ActivityHeatmapProps) {
   const [hoveredDay, setHoveredDay] = useState<{
     dateStr: string;
     count: number;
@@ -35,31 +37,31 @@ export function ActivityHeatmap({ data }: ActivityHeatmapProps) {
   }, [data]);
 
   const getColorClass = (count: number) => {
-    if (count === 0) return 'bg-white/[0.04] border-white/[0.05]';
+    if (count === 0) return 'bg-[var(--card)] border-[var(--border)]';
     if (count === 1) return 'bg-emerald-600/60 border-emerald-500/40';
     if (count === 2) return 'bg-emerald-500 border-emerald-400';
     return 'bg-emerald-400 border-emerald-300 shadow-[0_0_8px_rgba(52,211,153,0.5)]';
   };
 
   return (
-    <div className="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-4 space-y-3">
+    <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
           Kalender Aktivitas
         </h3>
         {hoveredDay ? (
-          <p className="text-xs text-zinc-200 font-medium">
+          <p className="text-xs text-[var(--fg-strong)] font-medium">
             <span className="text-emerald-400 font-bold">{hoveredDay.dateStr}</span>:{' '}
             {hoveredDay.count > 0 ? (
               <>
-                {hoveredDay.count} sesi ({hoveredDay.volume.toLocaleString('id-ID')} kg)
+                {hoveredDay.count} sesi ({Math.round(toDisplayWeight(hoveredDay.volume, weightUnit)).toLocaleString('id-ID')} {weightUnitLabel(weightUnit)})
               </>
             ) : (
               'Istirahat'
             )}
           </p>
         ) : (
-          <p className="text-[11px] text-zinc-500">Sentuh kotak untuk detail</p>
+          <p className="text-[11px] text-[var(--muted-strong)]">Sentuh kotak untuk detail</p>
         )}
       </div>
 
@@ -98,10 +100,10 @@ export function ActivityHeatmap({ data }: ActivityHeatmapProps) {
       </div>
 
       {/* Legend */}
-      <div className="flex items-center justify-between text-[11px] text-zinc-500 pt-1 border-t border-white/[0.06]">
+      <div className="flex items-center justify-between text-[11px] text-[var(--muted-strong)] pt-1 border-t border-[var(--border)]">
         <span>Istirahat</span>
         <div className="flex items-center gap-1.5">
-          <div className="w-2.5 h-2.5 rounded-sm bg-white/[0.04] border border-white/[0.05]" />
+          <div className="w-2.5 h-2.5 rounded-sm bg-[var(--card)] border border-[var(--border)]" />
           <div className="w-2.5 h-2.5 rounded-sm bg-emerald-600/60" />
           <div className="w-2.5 h-2.5 rounded-sm bg-emerald-500" />
           <div className="w-2.5 h-2.5 rounded-sm bg-emerald-400" />

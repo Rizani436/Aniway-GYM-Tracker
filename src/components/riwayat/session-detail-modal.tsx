@@ -26,6 +26,7 @@ import {
 } from '@/app/actions/riwayat-actions';
 import { saveSessionAsProgramAction } from '@/app/actions/latihan-actions';
 import { MUSCLE_TRANSLATIONS, PROGRAM_COLORS } from '@/lib/constants';
+import { toKg, toDisplayWeight, roundWeight, weightUnitLabel } from '@/lib/units';
 
 interface SessionDetailModalProps {
   session: any | null;
@@ -33,6 +34,8 @@ interface SessionDetailModalProps {
   onClose: () => void;
   onUpdated: () => void;
   onDeleted: () => void;
+  /** Satuan tampilan user ('KG' | 'LB'); nilai di DB tetap kanonik KG. */
+  weightUnit?: string;
 }
 
 export function SessionDetailModal({
@@ -41,6 +44,7 @@ export function SessionDetailModal({
   onClose,
   onUpdated,
   onDeleted,
+  weightUnit,
 }: SessionDetailModalProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState('');
@@ -108,7 +112,7 @@ export function SessionDetailModal({
       setSavingSetId(setId);
       setSetError(null);
       await updateSetLogAction(setId, {
-        weight: field === 'weight' ? value : currentWeight,
+        weight: field === 'weight' ? toKg(value, weightUnit) : currentWeight,
         reps: field === 'reps' ? value : currentReps,
       });
       onUpdated();
@@ -180,21 +184,21 @@ export function SessionDetailModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
+        <div className="p-4 border-b border-[var(--border)] flex items-center justify-between">
           <div className="flex-1 min-w-0 pr-2">
             {isEditing ? (
               <input
                 type="text"
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
-                className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-2.5 py-1 text-sm font-bold text-zinc-100"
+                className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-2.5 py-1 text-sm font-bold text-[var(--fg-strong)]"
               />
             ) : (
-              <h3 className="font-bold text-zinc-100 text-base truncate">{session.name}</h3>
+              <h3 className="font-bold text-[var(--fg-strong)] text-base truncate">{session.name}</h3>
             )}
-            <p className="text-xs text-zinc-400 mt-0.5">
+            <p className="text-xs text-[var(--muted)] mt-0.5">
               {format(new Date(session.startedAt), 'EEEE, d MMMM yyyy • HH:mm', { locale: id })}
             </p>
           </div>
@@ -206,7 +210,7 @@ export function SessionDetailModal({
                   type="button"
                   onClick={openSaveProgram}
                   disabled={!session.exercises?.length}
-                  className="p-1.5 text-zinc-400 hover:text-emerald-300 rounded-lg hover:bg-zinc-800 disabled:opacity-40"
+                  className="p-1.5 text-[var(--muted)] hover:text-emerald-300 rounded-lg hover:bg-[var(--surface-2)] disabled:opacity-40"
                   title="Simpan sebagai program latihan"
                 >
                   <FolderPlus className="w-4 h-4" />
@@ -214,7 +218,7 @@ export function SessionDetailModal({
                 <button
                   type="button"
                   onClick={startEdit}
-                  className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800"
+                  className="p-1.5 text-[var(--muted)] hover:text-[var(--fg)] rounded-lg hover:bg-[var(--surface-2)]"
                   title="Edit data sesi"
                 >
                   <Edit2 className="w-4 h-4" />
@@ -222,7 +226,7 @@ export function SessionDetailModal({
                 <button
                   type="button"
                   onClick={handleDelete}
-                  className="p-1.5 text-zinc-400 hover:text-rose-400 rounded-lg hover:bg-zinc-800"
+                  className="p-1.5 text-[var(--muted)] hover:text-rose-400 rounded-lg hover:bg-[var(--surface-2)]"
                   title="Hapus sesi latihan"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -242,7 +246,7 @@ export function SessionDetailModal({
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 ml-1"
+              className="p-1.5 text-[var(--muted)] hover:text-[var(--fg)] rounded-lg hover:bg-[var(--surface-2)] ml-1"
             >
               <X className="w-5 h-5" />
             </button>
@@ -255,7 +259,7 @@ export function SessionDetailModal({
             <div className="flex gap-2">
               <Link
                 href={`/latihan/program/${savedProgramId}`}
-                className="flex-1 text-center px-3 py-2 rounded-lg bg-white/[0.05] border border-white/[0.08] text-xs font-bold text-zinc-200"
+                className="flex-1 text-center px-3 py-2 rounded-lg bg-[var(--card-hover)] border border-[var(--border)] text-xs font-bold text-[var(--fg-strong)]"
               >
                 Lihat Program
               </Link>
@@ -269,21 +273,21 @@ export function SessionDetailModal({
           </div>
         )}
         {showSaveProgram && !savedProgramId && (
-          <div className="mx-5 mb-3 bg-zinc-900/80 border border-zinc-800 rounded-xl p-3 space-y-2.5">
-            <p className="text-xs font-bold text-zinc-200">Simpan sebagai Program</p>
+          <div className="mx-5 mb-3 bg-[var(--surface)] border border-[var(--border)] rounded-xl p-3 space-y-2.5">
+            <p className="text-xs font-bold text-[var(--fg-strong)]">Simpan sebagai Program</p>
             <input
               type="text"
               value={progName}
               onChange={(e) => setProgName(e.target.value)}
               placeholder="Nama program"
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-2 text-xs text-zinc-100 focus:outline-none focus:border-emerald-500"
+              className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-2.5 py-2 text-xs text-[var(--fg-strong)] focus:outline-none focus:border-emerald-500"
             />
             <input
               type="text"
               value={progDesc}
               onChange={(e) => setProgDesc(e.target.value)}
               placeholder="Deskripsi (opsional)"
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-2 text-xs text-zinc-100 focus:outline-none focus:border-emerald-500"
+              className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-2.5 py-2 text-xs text-[var(--fg-strong)] focus:outline-none focus:border-emerald-500"
             />
             <div className="flex gap-1.5 flex-wrap">
               {PROGRAM_COLORS.map((c) => (
@@ -291,7 +295,7 @@ export function SessionDetailModal({
                   key={c.value}
                   type="button"
                   onClick={() => setProgColor(c.value)}
-                  className={`w-6 h-6 rounded-full transition ${progColor === c.value ? 'ring-2 ring-white ring-offset-2 ring-offset-zinc-900' : ''}`}
+                  className={`w-6 h-6 rounded-full transition ${progColor === c.value ? 'ring-2 ring-white ring-offset-2 ring-offset-[var(--surface)]' : ''}`}
                   style={{ backgroundColor: c.value }}
                   aria-label={`Warna ${c.value}`}
                 />
@@ -301,7 +305,7 @@ export function SessionDetailModal({
               <button
                 type="button"
                 onClick={() => setShowSaveProgram(false)}
-                className="flex-1 px-3 py-2 rounded-lg bg-white/[0.05] border border-white/[0.08] text-xs font-bold text-zinc-300"
+                className="flex-1 px-3 py-2 rounded-lg bg-[var(--card-hover)] border border-[var(--border)] text-xs font-bold text-[var(--fg-soft)]"
               >
                 Batal
               </button>
@@ -321,24 +325,24 @@ export function SessionDetailModal({
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {/* Edit Form Additions */}
           {isEditing && (
-            <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-3 space-y-2.5">
+            <div className="bg-[var(--bg)] border border-[var(--border)] rounded-xl p-3 space-y-2.5">
               <div>
-                <label className="text-[11px] font-semibold text-zinc-400">Tanggal & Jam</label>
+                <label className="text-[11px] font-semibold text-[var(--muted)]">Tanggal & Jam</label>
                 <input
                   type="datetime-local"
                   value={editDate}
                   onChange={(e) => setEditDate(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-zinc-200 mt-1"
+                  className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg px-2.5 py-1.5 text-xs text-[var(--fg-strong)] mt-1"
                 />
               </div>
               <div>
-                <label className="text-[11px] font-semibold text-zinc-400">Catatan Latihan</label>
+                <label className="text-[11px] font-semibold text-[var(--muted)]">Catatan Latihan</label>
                 <textarea
                   rows={2}
                   value={editNotes}
                   onChange={(e) => setEditNotes(e.target.value)}
                   placeholder="Tambah catatan..."
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-zinc-200 mt-1 resize-none"
+                  className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg px-2.5 py-1.5 text-xs text-[var(--fg-strong)] mt-1 resize-none"
                 />
               </div>
             </div>
@@ -346,26 +350,26 @@ export function SessionDetailModal({
 
           {/* Quick Stats Grid */}
           <div className="grid grid-cols-2 gap-2.5">
-            <div className="bg-zinc-950/70 border border-zinc-800/80 rounded-xl p-3 flex items-center gap-3">
+            <div className="bg-[var(--bg)] border border-[var(--border)] rounded-xl p-3 flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
                 <Clock className="w-4 h-4" />
               </div>
               <div>
-                <p className="text-[11px] text-zinc-400">Durasi</p>
-                <p className="font-bold text-sm text-zinc-100">
+                <p className="text-[11px] text-[var(--muted)]">Durasi</p>
+                <p className="font-bold text-sm text-[var(--fg-strong)]">
                   {formatDuration(session.durationSec)}
                 </p>
               </div>
             </div>
 
-            <div className="bg-zinc-950/70 border border-zinc-800/80 rounded-xl p-3 flex items-center gap-3">
+            <div className="bg-[var(--bg)] border border-[var(--border)] rounded-xl p-3 flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
                 <Dumbbell className="w-4 h-4" />
               </div>
               <div>
-                <p className="text-[11px] text-zinc-400">Total Volume</p>
+                <p className="text-[11px] text-[var(--muted)]">Total Volume</p>
                 <p className="font-bold text-sm text-emerald-400 font-mono">
-                  {session.totalVolume.toLocaleString('id-ID')} kg
+                  {Math.round(toDisplayWeight(session.totalVolume, weightUnit)).toLocaleString('id-ID')} {weightUnitLabel(weightUnit)}
                 </p>
               </div>
             </div>
@@ -373,29 +377,29 @@ export function SessionDetailModal({
 
           {/* Session Notes if exists */}
           {!isEditing && session.notes && (
-            <div className="bg-zinc-950/50 border border-zinc-800/60 rounded-xl p-3 text-xs text-zinc-300">
-              <span className="font-bold text-zinc-400 block mb-0.5">Catatan:</span>
+            <div className="bg-[var(--bg)] border border-[var(--border)] rounded-xl p-3 text-xs text-[var(--fg-soft)]">
+              <span className="font-bold text-[var(--muted)] block mb-0.5">Catatan:</span>
               <p className="leading-relaxed whitespace-pre-wrap">{session.notes}</p>
             </div>
           )}
 
           {/* Exercise & Sets Breakdown */}
           <div className="space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-400">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
               Rincian Gerakan & Set
             </h4>
 
             {session.exercises.map((se: any, idx: number) => (
               <div
                 key={se.id || idx}
-                className="bg-zinc-950/60 border border-zinc-800/80 rounded-xl p-3 space-y-2"
+                className="bg-[var(--bg)] border border-[var(--border)] rounded-xl p-3 space-y-2"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-md bg-zinc-800 text-[11px] font-bold flex items-center justify-center text-zinc-300">
+                    <span className="w-5 h-5 rounded-md bg-[var(--surface-2)] text-[11px] font-bold flex items-center justify-center text-[var(--fg-soft)]">
                       {idx + 1}
                     </span>
-                    <h5 className="font-bold text-sm text-zinc-100">{se.exercise?.name}</h5>
+                    <h5 className="font-bold text-sm text-[var(--fg-strong)]">{se.exercise?.name}</h5>
                   </div>
                   {se.exercise?.primaryMuscle && (
                     <span className="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/20 font-medium">
@@ -405,7 +409,7 @@ export function SessionDetailModal({
                 </div>
 
                 {/* Table of sets */}
-                <div className="divide-y divide-zinc-900 border-t border-zinc-900 pt-1 text-xs">
+                <div className="divide-y divide-[var(--border)] border-t border-[var(--border)] pt-1 text-xs">
                   {se.sets.map((set: any) => (
                     <div
                       key={set.id}
@@ -413,30 +417,30 @@ export function SessionDetailModal({
                         savingSetId === set.id ? 'opacity-60' : ''
                       }`}
                     >
-                      <div className="flex items-center justify-between text-zinc-300">
+                      <div className="flex items-center justify-between text-[var(--fg-soft)]">
                         <div className="flex items-center gap-1.5">
-                          <span className="text-zinc-500 font-mono w-5">
+                          <span className="text-[var(--muted-strong)] font-mono w-5">
                             #{set.setNumber}
                           </span>
                           {getSetTypeBadge(set.setType)}
                           <input
                             type="number"
                             inputMode="decimal"
-                            defaultValue={set.weight}
+                            defaultValue={roundWeight(set.weight, weightUnit)}
                             disabled={savingSetId !== null}
                             onBlur={(e) =>
                               handleSetBlur(
                                 set.id,
                                 'weight',
-                                set.weight,
+                                roundWeight(set.weight, weightUnit),
                                 e.target.value,
                                 set.weight,
                                 set.reps
                               )
                             }
-                            className="w-16 rounded-lg bg-white/[0.05] border border-white/[0.1] px-2 py-1 text-sm tabular-nums text-zinc-100"
+                            className="w-16 rounded-lg bg-[var(--card-hover)] border border-[var(--border)] px-2 py-1 text-sm tabular-nums text-[var(--fg-strong)]"
                           />
-                          <span className="text-zinc-400">kg ×</span>
+                          <span className="text-[var(--muted)]">{weightUnitLabel(weightUnit)} ×</span>
                           <input
                             type="number"
                             inputMode="decimal"
@@ -452,9 +456,9 @@ export function SessionDetailModal({
                                 set.reps
                               )
                             }
-                            className="w-16 rounded-lg bg-white/[0.05] border border-white/[0.1] px-2 py-1 text-sm tabular-nums text-zinc-100"
+                            className="w-16 rounded-lg bg-[var(--card-hover)] border border-[var(--border)] px-2 py-1 text-sm tabular-nums text-[var(--fg-strong)]"
                           />
-                          <span className="text-zinc-400">reps</span>
+                          <span className="text-[var(--muted)]">reps</span>
                           {savingSetId === set.id && (
                             <Loader2 className="w-3 h-3 animate-spin text-emerald-400" />
                           )}
@@ -462,8 +466,8 @@ export function SessionDetailModal({
 
                         <div className="flex items-center gap-2">
                           {set.estimated1RM > 0 && (
-                            <span className="text-[10px] text-zinc-500 font-mono">
-                              Est 1RM: {set.estimated1RM}kg
+                            <span className="text-[10px] text-[var(--muted-strong)] font-mono">
+                              Est 1RM: {roundWeight(set.estimated1RM, weightUnit)}{weightUnitLabel(weightUnit)}
                             </span>
                           )}
                           {set.isPersonalRecord && (

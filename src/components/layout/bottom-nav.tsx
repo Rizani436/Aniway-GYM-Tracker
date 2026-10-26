@@ -31,7 +31,7 @@ export function BottomNav() {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 px-3 pb-[env(safe-area-inset-bottom,12px)] pt-1 pointer-events-none">
       <div className="max-w-md mx-auto pointer-events-auto">
-        <div className="bg-[#0f1011]/90 backdrop-blur-xl border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.6)] rounded-2xl px-2 py-1.5 grid grid-cols-5 items-center">
+        <div className="bg-[var(--bg-soft)] backdrop-blur-xl border border-[var(--border)] shadow-[0_8px_32px_rgba(0,0,0,0.6)] rounded-2xl px-2 py-1.5 grid grid-cols-5 items-center">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive =
@@ -65,7 +65,7 @@ export function BottomNav() {
                 className={`relative flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-all duration-200 active:scale-95 ${
                   isActive
                     ? 'text-emerald-400 font-semibold'
-                    : 'text-zinc-400 hover:text-zinc-200'
+                    : 'text-[var(--muted)] hover:text-[var(--fg-strong)]'
                 }`}
               >
                 {isActive && (
@@ -78,7 +78,7 @@ export function BottomNav() {
                 />
                 <span
                   className={`text-[10px] mt-1 tracking-tight transition-colors ${
-                    isActive ? 'text-emerald-300 font-semibold' : 'text-zinc-400'
+                    isActive ? 'text-emerald-300 font-semibold' : 'text-[var(--muted)]'
                   }`}
                 >
                   {item.label}

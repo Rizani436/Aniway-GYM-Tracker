@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/supabase/server';
 import { saveWorkoutSessionSchema, type SaveWorkoutSessionInput } from '@/lib/validations';
 import { allWithDbRetry, withDbRetry } from '@/lib/db-retry';
+import { roundWeight, weightUnitLabel } from '@/lib/units';
 import { SetType } from '@prisma/client';
 
 async function requireUser() {
@@ -299,7 +300,7 @@ export async function getWorkoutInitialDataAction(
           const inc = incrementMap.get(exId) ?? 2.5;
           progressiveOverloadSuggestion = {
             suggestedWeightIncrement: inc,
-            reason: `Semua ${workSets.length} set sesi lalu tembus target (${targetRepMax} rep). Naikkan beban +${inc} kg hari ini!`,
+            reason: `Semua ${workSets.length} set sesi lalu tembus target (${targetRepMax} rep). Naikkan beban +${roundWeight(inc, user.weightUnit)} ${weightUnitLabel(user.weightUnit)} hari ini!`,
           };
         }
       }
@@ -347,13 +348,14 @@ export async function getWorkoutInitialDataAction(
 
 export async function getExerciseHistoryAction(exerciseId: string, targetRepMax?: number) {
   const user = await requireUser();
-  return getExerciseHistoryForUser(user.id, exerciseId, targetRepMax);
+  return getExerciseHistoryForUser(user.id, exerciseId, targetRepMax, user.weightUnit);
 }
 
 async function getExerciseHistoryForUser(
   userId: string,
   exerciseId: string,
-  targetRepMax?: number
+  targetRepMax?: number,
+  weightUnit?: string | null
 ): Promise<ExerciseHistoryInfo> {
   const [lastSessionExercise, best1RMAgg, recentSessions, noteSessionExercises] = await Promise.all([
     prisma.sessionExercise.findFirst({
@@ -449,7 +451,7 @@ async function getExerciseHistoryForUser(
     ) {
       progressiveOverloadSuggestion = {
         suggestedWeightIncrement: increment,
-        reason: `Semua ${completedWorkSets.length} set sesi lalu tembus target (${targetRepMax} rep). Naikkan beban +${increment} kg hari ini!`,
+        reason: `Semua ${completedWorkSets.length} set sesi lalu tembus target (${targetRepMax} rep). Naikkan beban +${roundWeight(increment, weightUnit)} ${weightUnitLabel(weightUnit)} hari ini!`,
       };
     }
   }

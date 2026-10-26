@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Trophy, Clock, Dumbbell, CheckCircle, ArrowRight, Target } from 'lucide-react';
 import type { NewPRInfo } from '@/app/actions/workout-actions';
+import { toDisplayWeight, roundWeight, weightUnitLabel } from '@/lib/units';
 
 export interface ExerciseTargetStat {
   name: string;
@@ -18,6 +19,8 @@ interface WorkoutSummaryModalProps {
   totalVolume: number;
   totalSets: number;
   newPRs: NewPRInfo[];
+  /** Satuan tampilan user ('KG' | 'LB'); nilai beban tetap kanonik KG. */
+  weightUnit?: string;
   /** true = sesi belum terkirim ke server, masih di antrean perangkat */
   queuedOffline?: boolean;
   targetStats?: ExerciseTargetStat[];
@@ -30,6 +33,7 @@ export function WorkoutSummaryModal({
   totalVolume,
   totalSets,
   newPRs,
+  weightUnit,
   queuedOffline = false,
   targetStats = [],
   onClose,
@@ -45,6 +49,7 @@ export function WorkoutSummaryModal({
     hours > 0 ? `${hours} jam ${remainingMinutes} mnt` : `${minutes} mnt ${seconds} dtk`;
 
   const prCount = newPRs.length;
+  const unitLabel = weightUnitLabel(weightUnit);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
@@ -74,16 +79,16 @@ export function WorkoutSummaryModal({
             }}
           />
         ))}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-3xl w-full max-w-md p-6 shadow-2xl text-center space-y-6">
+      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-3xl w-full max-w-md p-6 shadow-2xl text-center space-y-6">
         {/* Celebration Header */}
         <div className="space-y-2">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 mx-auto flex items-center justify-center shadow-lg shadow-emerald-500/30 text-zinc-950">
             <Trophy className="w-8 h-8 stroke-[2.5]" />
           </div>
-          <h2 className="text-2xl font-black text-zinc-100 tracking-tight">
+          <h2 className="text-2xl font-black text-[var(--fg-strong)] tracking-tight">
             Latihan Selesai! 🔥
           </h2>
-          <p className="text-sm text-zinc-400">
+          <p className="text-sm text-[var(--muted)]">
             {queuedOffline
               ? 'Sesi tersimpan di perangkat ini dan akan dikirim ke server saat online.'
               : 'Sesi latihan berhasil disimpan ke database. Konsistensi hari ini luar biasa!'}
@@ -101,37 +106,37 @@ export function WorkoutSummaryModal({
         {prCount > 0 && (
           <div className="bg-gradient-to-br from-emerald-500/20 to-amber-500/20 border border-emerald-500/40 rounded-2xl py-3 px-4 text-center animate-in zoom-in duration-300">
             <p className="text-lg font-black text-emerald-300">🏆 PR Baru!</p>
-            <p className="text-xs text-zinc-300 mt-1">
-              {newPRs.map((pr) => `${pr.exerciseName} — ${pr.weight}kg × ${pr.reps}`).join(' · ')}
+            <p className="text-xs text-[var(--fg-soft)] mt-1">
+              {newPRs.map((pr) => `${pr.exerciseName} — ${roundWeight(pr.weight, weightUnit)}${unitLabel} × ${pr.reps}`).join(' · ')}
             </p>
           </div>
         )}
 
         {/* Stats Grid */}
         <div className="grid grid-cols-3 gap-2.5">
-          <div className="bg-zinc-950/70 border border-zinc-800/80 rounded-2xl p-3 text-center">
+          <div className="bg-[var(--bg)] border border-[var(--border)] rounded-2xl p-3 text-center">
             <Clock className="w-4 h-4 text-emerald-400 mx-auto mb-1" />
-            <p className="text-[11px] text-zinc-500">Durasi</p>
-            <p className="font-bold text-sm text-zinc-200">{durationStr}</p>
+            <p className="text-[11px] text-[var(--muted-strong)]">Durasi</p>
+            <p className="font-bold text-sm text-[var(--fg-strong)]">{durationStr}</p>
           </div>
-          <div className="bg-zinc-950/70 border border-zinc-800/80 rounded-2xl p-3 text-center">
+          <div className="bg-[var(--bg)] border border-[var(--border)] rounded-2xl p-3 text-center">
             <Dumbbell className="w-4 h-4 text-emerald-400 mx-auto mb-1" />
-            <p className="text-[11px] text-zinc-500">Total Volume</p>
+            <p className="text-[11px] text-[var(--muted-strong)]">Total Volume</p>
             <p className="font-bold text-sm text-emerald-400 font-mono">
-              {totalVolume.toLocaleString('id-ID')} kg
+              {Math.round(toDisplayWeight(totalVolume, weightUnit)).toLocaleString('id-ID')} {unitLabel}
             </p>
           </div>
-          <div className="bg-zinc-950/70 border border-zinc-800/80 rounded-2xl p-3 text-center">
+          <div className="bg-[var(--bg)] border border-[var(--border)] rounded-2xl p-3 text-center">
             <CheckCircle className="w-4 h-4 text-emerald-400 mx-auto mb-1" />
-            <p className="text-[11px] text-zinc-500">Set Selesai</p>
-            <p className="font-bold text-sm text-zinc-200 font-mono">{totalSets} Set</p>
+            <p className="text-[11px] text-[var(--muted-strong)]">Set Selesai</p>
+            <p className="font-bold text-sm text-[var(--fg-strong)] font-mono">{totalSets} Set</p>
           </div>
         </div>
 
         {/* Target vs Aktual */}
         {targetStats.length > 0 && (
-          <div className="space-y-2 text-left bg-white/[0.02] border border-white/[0.08] rounded-2xl p-3.5">
-            <div className="flex items-center gap-1.5 text-zinc-300">
+          <div className="space-y-2 text-left bg-[var(--card)] border border-[var(--border)] rounded-2xl p-3.5">
+            <div className="flex items-center gap-1.5 text-[var(--fg-soft)]">
               <Target className="w-3.5 h-3.5 text-emerald-400" />
               <h4 className="text-xs font-bold uppercase tracking-wide">Target vs Aktual</h4>
             </div>
@@ -141,9 +146,9 @@ export function WorkoutSummaryModal({
                 return (
                   <div
                     key={t.name}
-                    className="flex items-center justify-between gap-2 bg-zinc-900/80 border border-white/[0.06] rounded-xl px-2.5 py-2 text-xs"
+                    className="flex items-center justify-between gap-2 bg-[var(--surface)] border border-[var(--border)] rounded-xl px-2.5 py-2 text-xs"
                   >
-                    <span className="font-semibold text-zinc-200 truncate">{t.name}</span>
+                    <span className="font-semibold text-[var(--fg-strong)] truncate">{t.name}</span>
                     <span
                       className={`font-mono tabular-nums whitespace-nowrap font-bold ${
                         done ? 'text-emerald-400' : 'text-amber-400'
@@ -151,7 +156,7 @@ export function WorkoutSummaryModal({
                     >
                       {t.actualSets}/{t.targetSets} set
                       {t.targetReps && (
-                        <span className="text-zinc-500 font-normal">
+                        <span className="text-[var(--muted-strong)] font-normal">
                           {' '}
                           · {t.targetReps}
                           {t.actualAvgReps != null ? ` → ${t.actualAvgReps}` : ''}
@@ -178,21 +183,21 @@ export function WorkoutSummaryModal({
               {newPRs.map((pr, idx) => (
                 <div
                   key={idx}
-                  className="bg-zinc-900/80 border border-amber-500/20 rounded-xl p-2.5 flex items-center justify-between text-xs"
+                  className="bg-[var(--surface)] border border-amber-500/20 rounded-xl p-2.5 flex items-center justify-between text-xs"
                 >
                   <div>
-                    <p className="font-bold text-zinc-100">{pr.exerciseName}</p>
-                    <p className="text-zinc-400">
-                      {pr.weight} kg × {pr.reps} reps
+                    <p className="font-bold text-[var(--fg-strong)]">{pr.exerciseName}</p>
+                    <p className="text-[var(--muted)]">
+                      {roundWeight(pr.weight, weightUnit)} {unitLabel} × {pr.reps} reps
                     </p>
                   </div>
                   <div className="text-right">
                     <span className="inline-block bg-amber-500/20 text-amber-300 font-bold font-mono px-2 py-0.5 rounded-md border border-amber-500/30">
-                      Est 1RM: {pr.new1RM} kg
+                      Est 1RM: {roundWeight(pr.new1RM, weightUnit)} {unitLabel}
                     </span>
                     {pr.previousBest1RM > 0 && (
-                      <p className="text-[10px] text-zinc-500 mt-0.5">
-                        Sebelum: {pr.previousBest1RM} kg
+                      <p className="text-[10px] text-[var(--muted-strong)] mt-0.5">
+                        Sebelum: {roundWeight(pr.previousBest1RM, weightUnit)} {unitLabel}
                       </p>
                     )}
                   </div>
@@ -215,7 +220,7 @@ export function WorkoutSummaryModal({
           <Link
             href="/"
             onClick={onClose}
-            className="w-full py-2.5 px-4 text-zinc-400 hover:text-zinc-200 text-xs font-semibold block transition-colors"
+            className="w-full py-2.5 px-4 text-[var(--muted)] hover:text-[var(--fg-strong)] text-xs font-semibold block transition-colors"
           >
             Kembali ke Beranda
           </Link>

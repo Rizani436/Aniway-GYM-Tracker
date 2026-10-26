@@ -19,6 +19,7 @@ import {
 import { ActivityHeatmap } from './activity-heatmap';
 import { SessionDetailModal } from './session-detail-modal';
 import { ManualSessionModal } from './manual-session-modal';
+import { toDisplayWeight, weightUnitLabel } from '@/lib/units';
 
 interface RiwayatClientProps {
   initialSessions: any[];
@@ -42,6 +43,8 @@ interface RiwayatClientProps {
     hariLalu: number | null;
     jumlahGerakan: number;
   }>;
+  /** Satuan tampilan user ('KG' | 'LB'); nilai di DB tetap kanonik KG. */
+  weightUnit?: string;
 }
 
 export function RiwayatClient({
@@ -50,8 +53,11 @@ export function RiwayatClient({
   heatmapData,
   availableExercises,
   programJatuhTempo = [],
+  weightUnit,
 }: RiwayatClientProps) {
   const router = useRouter();
+  const unitLabel = weightUnitLabel(weightUnit);
+  const displayLifetimeVolume = toDisplayWeight(stats.totalLifetimeVolume, weightUnit);
   const [sessions] = useState(initialSessions);
   const [search, setSearch] = useState('');
   const [selectedSession, setSelectedSession] = useState<any | null>(null);
@@ -85,8 +91,8 @@ export function RiwayatClient({
       {/* Top Header */}
       <div className="flex items-center justify-between pt-1">
         <div>
-          <h1 className="text-xl font-extrabold text-white tracking-tight">Riwayat Latihan</h1>
-          <p className="text-xs text-zinc-400 mt-0.5">Jejak konsistensi & progres angkatan kamu</p>
+          <h1 className="text-xl font-extrabold text-[var(--fg)] tracking-tight">Riwayat Latihan</h1>
+          <p className="text-xs text-[var(--muted)] mt-0.5">Jejak konsistensi & progres angkatan kamu</p>
         </div>
 
         <button
@@ -102,43 +108,43 @@ export function RiwayatClient({
       {/* Stats Cards */}
       <div className="grid grid-cols-2 gap-2.5">
         {/* Streak */}
-        <div className="bg-gradient-to-b from-[#1b1508] to-[#120e06] border border-amber-500/25 rounded-2xl p-3.5 flex items-center gap-3 shadow-sm">
+        <div className="bg-gradient-to-b from-[var(--streak-from)] to-[var(--streak-to)] border border-amber-500/25 rounded-2xl p-3.5 flex items-center gap-3 shadow-sm">
           <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/25 flex items-center justify-center text-amber-400 shrink-0">
             <Flame className="w-5 h-5 fill-amber-400" />
           </div>
           <div>
             <p className="text-[11px] font-medium text-amber-300">Streak Latihan</p>
-            <p className="text-xl font-extrabold text-white font-mono">
-              {stats.currentStreak} <span className="text-xs font-normal text-zinc-400">Hari</span>
+            <p className="text-xl font-extrabold text-[var(--fg)] font-mono">
+              {stats.currentStreak} <span className="text-xs font-normal text-[var(--muted)]">Hari</span>
             </p>
           </div>
         </div>
 
         {/* Total Sesi */}
-        <div className="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-3.5 flex items-center gap-3">
+        <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-3.5 flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
             <Dumbbell className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-[11px] font-medium text-zinc-400">Total Sesi</p>
-            <p className="text-xl font-extrabold text-white font-mono">
-              {stats.totalSessions} <span className="text-xs font-normal text-zinc-400">Sesi</span>
+            <p className="text-[11px] font-medium text-[var(--muted)]">Total Sesi</p>
+            <p className="text-xl font-extrabold text-[var(--fg)] font-mono">
+              {stats.totalSessions} <span className="text-xs font-normal text-[var(--muted)]">Sesi</span>
             </p>
           </div>
         </div>
 
         {/* Total Volume */}
-        <div className="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-3.5 flex items-center gap-3">
+        <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-3.5 flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 shrink-0">
             <TrendingUp className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-[11px] font-medium text-zinc-400">Beban Angkat</p>
-            <p className="text-lg font-extrabold text-white font-mono">
-              {stats.totalLifetimeVolume >= 1000
-                ? `${(stats.totalLifetimeVolume / 1000).toFixed(1)}k`
-                : stats.totalLifetimeVolume}{' '}
-              <span className="text-xs font-normal text-zinc-400">kg</span>
+            <p className="text-[11px] font-medium text-[var(--muted)]">Beban Angkat</p>
+            <p className="text-lg font-extrabold text-[var(--fg)] font-mono">
+              {displayLifetimeVolume >= 1000
+                ? `${(displayLifetimeVolume / 1000).toFixed(1)}k`
+                : Math.round(displayLifetimeVolume).toLocaleString('id-ID')}{' '}
+              <span className="text-xs font-normal text-[var(--muted)]">{unitLabel}</span>
             </p>
           </div>
         </div>
@@ -146,15 +152,15 @@ export function RiwayatClient({
         {/* Total PRs */}
         <Link
           href="/riwayat/pr"
-          className="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-3.5 flex items-center gap-3"
+          className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-3.5 flex items-center gap-3"
         >
           <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 shrink-0">
             <Trophy className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-[11px] font-medium text-zinc-400">Rekor Baru (PR)</p>
-            <p className="text-xl font-extrabold text-white font-mono">
-              {stats.totalPRs} <span className="text-xs font-normal text-zinc-400">Kali</span>
+            <p className="text-[11px] font-medium text-[var(--muted)]">Rekor Baru (PR)</p>
+            <p className="text-xl font-extrabold text-[var(--fg)] font-mono">
+              {stats.totalPRs} <span className="text-xs font-normal text-[var(--muted)]">Kali</span>
             </p>
             <p className="text-[10px] font-medium text-emerald-400">Lihat PR →</p>
           </div>
@@ -178,15 +184,15 @@ export function RiwayatClient({
               <Link
                 key={prog.id}
                 href={`/workout?programId=${prog.id}`}
-                className="flex items-center gap-2.5 p-2 rounded-xl bg-white/[0.03] border border-white/[0.07] active:scale-[0.99] transition-transform touch-manipulation"
+                className="flex items-center gap-2.5 p-2 rounded-xl bg-[var(--card)] border border-[var(--border)] active:scale-[0.99] transition-transform touch-manipulation"
               >
                 <span
                   className="w-1.5 h-7 rounded-full shrink-0"
                   style={{ backgroundColor: prog.color }}
                 />
                 <span className="min-w-0 flex-1">
-                  <span className="block text-xs font-semibold text-white truncate">{prog.name}</span>
-                  <span className="block text-[10px] text-zinc-400">
+                  <span className="block text-xs font-semibold text-[var(--fg)] truncate">{prog.name}</span>
+                  <span className="block text-[10px] text-[var(--muted)]">
                     {prog.hariLalu === null
                       ? `Belum pernah dilatih · ${prog.jumlahGerakan} gerakan`
                       : `${prog.hariLalu} hari lalu · ${prog.jumlahGerakan} gerakan`}
@@ -200,32 +206,32 @@ export function RiwayatClient({
       )}
 
       {/* Activity Heatmap */}
-      <ActivityHeatmap data={heatmapData} />
+      <ActivityHeatmap data={heatmapData} weightUnit={weightUnit} />
 
       {/* Sesi List Section */}
       <div className="space-y-3">
         <div className="flex items-center justify-between px-0.5">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-400">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
             Daftar Sesi ({filteredSessions.length})
           </h2>
         </div>
 
         {/* Search Input */}
         <div className="relative">
-          <Search className="w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-[var(--muted-strong)] absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Cari sesi atau gerakan..."
-            className="w-full bg-white/[0.04] border border-white/[0.08] focus:border-emerald-500 rounded-xl pl-10 pr-3.5 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none transition-colors"
+            className="w-full bg-[var(--card)] border border-[var(--border)] focus:border-emerald-500 rounded-xl pl-10 pr-3.5 py-2.5 text-xs text-[var(--fg)] placeholder-[var(--muted-strong)] focus:outline-none transition-colors"
           />
         </div>
 
         {/* Cards */}
         {filteredSessions.length === 0 ? (
-          <div className="bg-white/[0.02] border border-dashed border-white/[0.08] rounded-2xl p-8 text-center space-y-2">
-            <p className="text-xs text-zinc-400">
+          <div className="bg-[var(--card)] border border-dashed border-[var(--border)] rounded-2xl p-8 text-center space-y-2">
+            <p className="text-xs text-[var(--muted)]">
               Belum ada riwayat sesi yang cocok. Mulai workout atau catat manual.
             </p>
           </div>
@@ -243,12 +249,12 @@ export function RiwayatClient({
                     setSelectedSession(session);
                     setIsDetailOpen(true);
                   }}
-                  className="bg-white/[0.03] hover:bg-white/[0.05] border border-white/[0.07] hover:border-white/[0.12] rounded-2xl p-3.5 transition-all cursor-pointer shadow-sm group active:scale-[0.99]"
+                  className="bg-[var(--card)] hover:bg-[var(--card-hover)] border border-[var(--border)] hover:border-[var(--border)] rounded-2xl p-3.5 transition-all cursor-pointer shadow-sm group active:scale-[0.99]"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <h3 className="font-bold text-sm text-white group-hover:text-emerald-300 transition-colors">
+                        <h3 className="font-bold text-sm text-[var(--fg)] group-hover:text-emerald-300 transition-colors">
                           {session.name}
                         </h3>
                         {session.program && (
@@ -263,38 +269,38 @@ export function RiwayatClient({
                           </span>
                         )}
                       </div>
-                      <p className="text-[11px] text-zinc-400">
+                      <p className="text-[11px] text-[var(--muted)]">
                         {format(new Date(session.startedAt), 'EEEE, d MMMM yyyy • HH:mm', {
                           locale: id,
                         })}
                       </p>
                     </div>
 
-                    <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-zinc-300 group-hover:translate-x-0.5 transition-all shrink-0 mt-1" />
+                    <ChevronRight className="w-4 h-4 text-[var(--muted-strong)] group-hover:text-[var(--fg-soft)] group-hover:translate-x-0.5 transition-all shrink-0 mt-1" />
                   </div>
 
                   {/* Summary Bar */}
-                  <div className="flex items-center gap-3 mt-3 pt-2.5 border-t border-white/[0.06] text-xs">
-                    <div className="flex items-center gap-1 text-zinc-400">
-                      <Clock className="w-3.5 h-3.5 text-zinc-500" />
+                  <div className="flex items-center gap-3 mt-3 pt-2.5 border-t border-[var(--border)] text-xs">
+                    <div className="flex items-center gap-1 text-[var(--muted)]">
+                      <Clock className="w-3.5 h-3.5 text-[var(--muted-strong)]" />
                       <span>{formatDuration(session.durationSec)}</span>
                     </div>
-                    <span className="text-zinc-700">•</span>
-                    <div className="flex items-center gap-1 text-zinc-400">
-                      <Dumbbell className="w-3.5 h-3.5 text-zinc-500" />
+                    <span className="text-[var(--muted-strong)]">•</span>
+                    <div className="flex items-center gap-1 text-[var(--muted)]">
+                      <Dumbbell className="w-3.5 h-3.5 text-[var(--muted-strong)]" />
                       <span className="font-mono font-medium text-emerald-400">
-                        {session.totalVolume.toLocaleString('id-ID')} kg
+                        {Math.round(toDisplayWeight(session.totalVolume, weightUnit)).toLocaleString('id-ID')} {unitLabel}
                       </span>
                     </div>
-                    <span className="text-zinc-700">•</span>
-                    <span className="text-zinc-400 font-mono">
+                    <span className="text-[var(--muted-strong)]">•</span>
+                    <span className="text-[var(--muted)] font-mono">
                       {session.exercises?.length || 0} gerakan
                     </span>
                   </div>
 
                   {/* Exercises mini tags */}
                   {session.exercises && session.exercises.length > 0 && (
-                    <div className="mt-2 text-[11px] text-zinc-500 truncate">
+                    <div className="mt-2 text-[11px] text-[var(--muted-strong)] truncate">
                       {session.exercises.map((e: any) => e.exercise?.name).join(' • ')}
                     </div>
                   )}
@@ -309,6 +315,7 @@ export function RiwayatClient({
       <SessionDetailModal
         session={selectedSession}
         isOpen={isDetailOpen}
+        weightUnit={weightUnit}
         onClose={() => {
           setIsDetailOpen(false);
           setSelectedSession(null);
@@ -321,6 +328,7 @@ export function RiwayatClient({
         isOpen={isManualModalOpen}
         onClose={() => setIsManualModalOpen(false)}
         availableExercises={availableExercises}
+        weightUnit={weightUnit}
         onSuccess={handleRefresh}
       />
     </div>

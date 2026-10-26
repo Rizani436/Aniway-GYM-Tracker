@@ -42,7 +42,7 @@ export default async function WorkoutPage({ searchParams }: PageProps) {
   const serverReachable = !initFailed;
 
   return (
-    <main className="min-h-[100dvh] bg-[#08090a] text-[#f7f8f8] px-4 pt-[max(0.5rem,env(safe-area-inset-top))]">
+    <main className="min-h-[100dvh] bg-[var(--bg)] text-[var(--fg)] px-4 pt-[max(0.5rem,env(safe-area-inset-top))]">
       <WorkoutRunner
         user={initialData?.user ?? null}
         initialProgram={initialData?.selectedProgram ?? null}

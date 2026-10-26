@@ -5,6 +5,7 @@ import { getAuthenticatedUser } from '@/lib/supabase/server';
 import { SetType, MuscleGroup } from '@prisma/client';
 import { format } from 'date-fns';
 import { revalidatePath } from 'next/cache';
+import { toDisplayWeight, weightUnitLabel } from '@/lib/units';
 
 async function requireUser() {
   const user = await getAuthenticatedUser();
@@ -145,7 +146,9 @@ export async function getBodyWeightLogsAction(): Promise<BodyWeightData> {
 export async function logBodyWeightAction(weight: number) {
   const user = await requireUser();
   if (!(weight > 20 && weight < 300)) {
-    throw new Error('Berat badan tidak wajar (20–300 kg).');
+    throw new Error(
+      `Berat badan tidak wajar (${Math.round(toDisplayWeight(20, user.weightUnit))}–${Math.round(toDisplayWeight(300, user.weightUnit))} ${weightUnitLabel(user.weightUnit)}).`
+    );
   }
   await prisma.bodyWeightLog.create({
     data: { userId: user.id, weight },

@@ -47,6 +47,7 @@ import {
   PROGRAM_COLORS,
 } from '@/lib/constants';
 import { ExerciseFormModal } from './exercise-form-modal';
+import { roundWeight, weightUnitLabel } from '@/lib/units';
 
 type ProgramListType = Awaited<ReturnType<typeof getProgramsAction>>;
 type ExerciseListType = Awaited<ReturnType<typeof getExercisesAction>>;
@@ -82,7 +83,7 @@ function SortableProgramCard({
     <div
       ref={setNodeRef}
       style={style}
-      className={`relative rounded-2xl bg-white/[0.03] border border-white/[0.07] overflow-hidden transition ${
+      className={`relative rounded-2xl bg-[var(--card)] border border-[var(--border)] overflow-hidden transition ${
         isDragging ? 'opacity-70 scale-[1.02] z-30 shadow-2xl' : ''
       }`}
     >
@@ -96,7 +97,7 @@ function SortableProgramCard({
             type="button"
             {...attributes}
             {...listeners}
-            className="mt-1 p-1.5 rounded-lg text-zinc-500 hover:text-zinc-300 touch-none active:bg-zinc-800"
+            className="mt-1 p-1.5 rounded-lg text-[var(--muted-strong)] hover:text-[var(--fg-soft)] touch-none active:bg-[var(--surface-2)]"
             aria-label="Geser urutan program"
           >
             <GripVertical className="w-5 h-5" />
@@ -110,34 +111,34 @@ function SortableProgramCard({
           >
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-bold text-base text-zinc-100 group-hover:text-emerald-400 transition">
+                <h3 className="font-bold text-base text-[var(--fg-strong)] group-hover:text-emerald-400 transition">
                   {program.name}
                 </h3>
                 {program.isArchived && (
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400">
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--surface-2)] text-[var(--muted)]">
                     Arsip
                   </span>
                 )}
               </div>
               {program.description && (
-                <p className="text-xs text-zinc-400 mt-0.5 line-clamp-1">
+                <p className="text-xs text-[var(--muted)] mt-0.5 line-clamp-1">
                   {program.description}
                 </p>
               )}
             </div>
-            <ChevronRight className="w-5 h-5 text-zinc-500 shrink-0" />
+            <ChevronRight className="w-5 h-5 text-[var(--muted-strong)] shrink-0" />
           </Link>
 
           <div className="mt-3 flex flex-wrap gap-1.5">
             {program.exercises.length === 0 ? (
-              <span className="text-xs text-zinc-500 italic">
+              <span className="text-xs text-[var(--muted-strong)] italic">
                 Belum ada gerakan
               </span>
             ) : (
               program.exercises.slice(0, 4).map((pe) => (
                 <span
                   key={pe.id}
-                  className="text-[11px] px-2.5 py-1 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-300"
+                  className="text-[11px] px-2.5 py-1 rounded-lg bg-[var(--bg)] border border-[var(--border)] text-[var(--fg-soft)]"
                 >
                   {pe.exercise.name} ({pe.targetSets}×{pe.targetRepMin}-
                   {pe.targetRepMax})
@@ -145,18 +146,18 @@ function SortableProgramCard({
               ))
             )}
             {program.exercises.length > 4 && (
-              <span className="text-[11px] px-2 py-1 rounded-lg bg-zinc-800 text-zinc-400">
+              <span className="text-[11px] px-2 py-1 rounded-lg bg-[var(--surface-2)] text-[var(--muted)]">
                 +{program.exercises.length - 4} lagi
               </span>
             )}
           </div>
 
-          <div className="mt-4 pt-3 border-t border-zinc-800/80 flex items-center justify-between">
+          <div className="mt-4 pt-3 border-t border-[var(--border)] flex items-center justify-between">
             <div className="flex items-center gap-1">
               <button
                 type="button"
                 onClick={() => onEdit(program)}
-                className="p-2 rounded-xl text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800"
+                className="p-2 rounded-xl text-[var(--muted)] hover:text-[var(--fg-strong)] hover:bg-[var(--surface-2)]"
                 title="Edit Program"
               >
                 <Edit3 className="w-4 h-4" />
@@ -164,7 +165,7 @@ function SortableProgramCard({
               <button
                 type="button"
                 onClick={() => onArchive(program.id)}
-                className="p-2 rounded-xl text-zinc-400 hover:text-amber-400 hover:bg-zinc-800"
+                className="p-2 rounded-xl text-[var(--muted)] hover:text-amber-400 hover:bg-[var(--surface-2)]"
                 title={program.isArchived ? 'Pulihkan Program' : 'Arsipkan'}
               >
                 {program.isArchived ? (
@@ -176,7 +177,7 @@ function SortableProgramCard({
               <button
                 type="button"
                 onClick={() => onDelete(program.id, program.name)}
-                className="p-2 rounded-xl text-zinc-400 hover:text-red-400 hover:bg-zinc-800"
+                className="p-2 rounded-xl text-[var(--muted)] hover:text-red-400 hover:bg-[var(--surface-2)]"
                 title="Hapus Program"
               >
                 <Trash2 className="w-4 h-4" />
@@ -202,10 +203,12 @@ export function LatihanTabsClient({
   initialPrograms,
   initialExercises,
   userId,
+  weightUnit,
 }: {
   initialPrograms: ProgramListType;
   initialExercises: ExerciseListType;
   userId: string;
+  weightUnit?: string;
 }) {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'programs' | 'exercises'>(
@@ -351,21 +354,21 @@ export function LatihanTabsClient({
       <div className="flex items-center justify-between mb-5">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Master Latihan</h1>
-          <p className="text-xs text-zinc-400">
+          <p className="text-xs text-[var(--muted)]">
             Kelola program bebas jadwal & 40+ pustaka gerakan mesin
           </p>
         </div>
       </div>
 
       {/* Switcher Tab */}
-      <div className="grid grid-cols-2 gap-1.5 p-1.5 bg-white/[0.04] border border-white/[0.08] rounded-2xl mb-5">
+      <div className="grid grid-cols-2 gap-1.5 p-1.5 bg-[var(--card)] border border-[var(--border)] rounded-2xl mb-5">
         <button
           type="button"
           onClick={() => setActiveTab('programs')}
           className={`py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all active:scale-95 ${
             activeTab === 'programs'
               ? 'bg-emerald-500 text-zinc-950 shadow-sm font-extrabold'
-              : 'text-zinc-400 hover:text-white'
+              : 'text-[var(--muted)] hover:text-[var(--fg)]'
           }`}
         >
           <Layers className="w-4 h-4" />
@@ -377,7 +380,7 @@ export function LatihanTabsClient({
           className={`py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all active:scale-95 ${
             activeTab === 'exercises'
               ? 'bg-emerald-500 text-zinc-950 shadow-sm font-extrabold'
-              : 'text-zinc-400 hover:text-white'
+              : 'text-[var(--muted)] hover:text-[var(--fg)]'
           }`}
         >
           <Dumbbell className="w-4 h-4" />
@@ -398,12 +401,12 @@ export function LatihanTabsClient({
           </button>
 
           {activePrograms.length === 0 ? (
-            <div className="text-center py-12 px-4 rounded-2xl bg-zinc-900/60 border border-zinc-800/80">
-              <Layers className="w-10 h-10 text-zinc-600 mx-auto mb-3" />
-              <p className="font-semibold text-zinc-200">
+            <div className="text-center py-12 px-4 rounded-2xl bg-[var(--surface)] border border-[var(--border)]">
+              <Layers className="w-10 h-10 text-[var(--muted-strong)] mx-auto mb-3" />
+              <p className="font-semibold text-[var(--fg-strong)]">
                 Belum Ada Program Latihan
               </p>
-              <p className="text-xs text-zinc-400 mt-1">
+              <p className="text-xs text-[var(--muted)] mt-1">
                 Buat program seperti Push A, Pull B, atau Upper Body agar Anda
                 bisa langsung memulai latihan kapan saja.
               </p>
@@ -446,7 +449,7 @@ export function LatihanTabsClient({
               <button
                 type="button"
                 onClick={() => setShowArchivedPrograms((prev) => !prev)}
-                className="text-xs font-semibold text-zinc-400 hover:text-zinc-200 flex items-center gap-1.5"
+                className="text-xs font-semibold text-[var(--muted)] hover:text-[var(--fg-strong)] flex items-center gap-1.5"
               >
                 <Archive className="w-3.5 h-3.5" />
                 {showArchivedPrograms ? 'Sembunyikan' : 'Tampilkan'} Program
@@ -480,13 +483,13 @@ export function LatihanTabsClient({
         <div className="space-y-4">
           <div className="flex gap-2">
             <div className="relative flex-1">
-              <Search className="w-4 h-4 text-zinc-500 absolute left-3.5 top-3.5" />
+              <Search className="w-4 h-4 text-[var(--muted-strong)] absolute left-3.5 top-3.5" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Cari gerakan mesin, kabel..."
-                className="w-full pl-10 pr-4 py-2.5 bg-white/[0.04] border border-white/[0.08] rounded-xl text-xs text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                className="w-full pl-10 pr-4 py-2.5 bg-[var(--card)] border border-[var(--border)] rounded-xl text-xs text-[var(--fg)] focus:outline-none focus:border-emerald-500 transition-colors"
               />
             </div>
             <button
@@ -503,11 +506,11 @@ export function LatihanTabsClient({
             <select
               value={selectedMuscle}
               onChange={(e) => setSelectedMuscle(e.target.value)}
-              className="px-2 py-2 bg-white/[0.04] border border-white/[0.08] rounded-xl text-[11px] text-zinc-200 focus:outline-none focus:border-emerald-500 transition-colors"
+              className="px-2 py-2 bg-[var(--card)] border border-[var(--border)] rounded-xl text-[11px] text-[var(--fg-strong)] focus:outline-none focus:border-emerald-500 transition-colors"
             >
               <option value="ALL">Semua Otot</option>
               {Object.entries(MUSCLE_LABELS).map(([key, label]) => (
-                <option key={key} value={key} className="bg-zinc-900 text-white">
+                <option key={key} value={key} className="bg-[var(--surface)] text-[var(--fg)]">
                   {label}
                 </option>
               ))}
@@ -516,11 +519,11 @@ export function LatihanTabsClient({
             <select
               value={selectedEquipment}
               onChange={(e) => setSelectedEquipment(e.target.value)}
-              className="px-2 py-2 bg-white/[0.04] border border-white/[0.08] rounded-xl text-[11px] text-zinc-200 focus:outline-none focus:border-emerald-500 transition-colors"
+              className="px-2 py-2 bg-[var(--card)] border border-[var(--border)] rounded-xl text-[11px] text-[var(--fg-strong)] focus:outline-none focus:border-emerald-500 transition-colors"
             >
               <option value="ALL">Semua Alat</option>
               {Object.entries(EQUIPMENT_LABELS).map(([key, label]) => (
-                <option key={key} value={key} className="bg-zinc-900 text-white">
+                <option key={key} value={key} className="bg-[var(--surface)] text-[var(--fg)]">
                   {label}
                 </option>
               ))}
@@ -529,11 +532,11 @@ export function LatihanTabsClient({
             <select
               value={selectedProgramFilter}
               onChange={(e) => setSelectedProgramFilter(e.target.value)}
-              className="px-2 py-2 bg-white/[0.04] border border-white/[0.08] rounded-xl text-[11px] text-zinc-200 focus:outline-none focus:border-emerald-500 transition-colors"
+              className="px-2 py-2 bg-[var(--card)] border border-[var(--border)] rounded-xl text-[11px] text-[var(--fg-strong)] focus:outline-none focus:border-emerald-500 transition-colors"
             >
               <option value="ALL">Semua Program</option>
               {programs.map((p) => (
-                <option key={p.id} value={p.id} className="bg-zinc-900 text-white">
+                <option key={p.id} value={p.id} className="bg-[var(--surface)] text-[var(--fg)]">
                   {p.name}
                 </option>
               ))}
@@ -542,8 +545,8 @@ export function LatihanTabsClient({
 
           <div className="space-y-2">
             {filteredExercises.length === 0 ? (
-              <div className="text-center py-10 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
-                <p className="text-xs text-zinc-400">
+              <div className="text-center py-10 rounded-2xl bg-[var(--card)] border border-[var(--border)]">
+                <p className="text-xs text-[var(--muted)]">
                   Tidak ada gerakan yang cocok dengan filter.
                 </p>
               </div>
@@ -552,7 +555,7 @@ export function LatihanTabsClient({
                 <Link
                   key={ex.id}
                   href={`/latihan/gerakan/${ex.id}`}
-                  className="block p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.07] hover:border-white/[0.12] active:scale-[0.99] transition-all"
+                  className="block p-3.5 rounded-2xl bg-[var(--card)] border border-[var(--border)] hover:border-[var(--border)] active:scale-[0.99] transition-all"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-start gap-3 min-w-0">
@@ -561,12 +564,12 @@ export function LatihanTabsClient({
                           src={ex.imageUrl}
                           alt={ex.name}
                           loading="lazy"
-                          className="w-12 h-16 object-contain rounded-xl bg-zinc-900 border border-zinc-800/80 shrink-0"
+                          className="w-12 h-16 object-contain rounded-xl bg-[var(--surface)] border border-[var(--border)] shrink-0"
                         />
                       )}
                       <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <h3 className="font-bold text-sm text-zinc-100">
+                        <h3 className="font-bold text-sm text-[var(--fg-strong)]">
                           {ex.name}
                         </h3>
                         {ex.isCustom && (
@@ -575,14 +578,14 @@ export function LatihanTabsClient({
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-zinc-400 mt-1">
+                      <p className="text-xs text-[var(--muted)] mt-1">
                         {MUSCLE_LABELS[ex.primaryMuscle]} •{' '}
                         {EQUIPMENT_LABELS[ex.equipment]} • Increment +
-                        {ex.weightIncrement} kg
+                        {roundWeight(ex.weightIncrement, weightUnit)} {weightUnitLabel(weightUnit)}
                       </p>
                       </div>
                     </div>
-                    <ChevronRight className="w-5 h-5 text-zinc-500 shrink-0 mt-0.5" />
+                    <ChevronRight className="w-5 h-5 text-[var(--muted-strong)] shrink-0 mt-0.5" />
                   </div>
 
                   {ex.programExercises.length > 0 && (
@@ -594,7 +597,7 @@ export function LatihanTabsClient({
                             borderColor: `${pe.program.color}50`,
                             color: pe.program.color,
                           }}
-                          className="text-[10px] font-semibold px-2 py-0.5 rounded-md border bg-zinc-950"
+                          className="text-[10px] font-semibold px-2 py-0.5 rounded-md border bg-[var(--bg)]"
                         >
                           {pe.program.name}
                         </span>
@@ -611,13 +614,13 @@ export function LatihanTabsClient({
       {/* MODAL BUAT / EDIT PROGRAM */}
       {isProgramModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
-          <div className="bg-zinc-900 border-t sm:border border-zinc-800 w-full max-w-md rounded-t-3xl sm:rounded-2xl p-5 space-y-4">
+          <div className="bg-[var(--surface)] border-t sm:border border-[var(--border)] w-full max-w-md rounded-t-3xl sm:rounded-2xl p-5 space-y-4">
             <h2 className="text-lg font-bold">
               {editingProgram ? 'Edit Program' : 'Buat Program Baru'}
             </h2>
 
             <div>
-              <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+              <label className="block text-xs font-semibold text-[var(--muted)] mb-1.5">
                 Nama Program *
               </label>
               <input
@@ -626,12 +629,12 @@ export function LatihanTabsClient({
                 value={progName}
                 onChange={(e) => setProgName(e.target.value)}
                 placeholder="Contoh: Push A (Dada, Bahu, Trisep)"
-                className="w-full px-3.5 py-3 bg-zinc-950 border border-zinc-800 rounded-xl text-sm text-zinc-100"
+                className="w-full px-3.5 py-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-sm text-[var(--fg-strong)]"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+              <label className="block text-xs font-semibold text-[var(--muted)] mb-1.5">
                 Deskripsi Singkat (Opsional)
               </label>
               <input
@@ -639,12 +642,12 @@ export function LatihanTabsClient({
                 value={progDesc}
                 onChange={(e) => setProgDesc(e.target.value)}
                 placeholder="Fokus mesin hipertrofi dada atas & bahu samping"
-                className="w-full px-3.5 py-3 bg-zinc-950 border border-zinc-800 rounded-xl text-sm text-zinc-100"
+                className="w-full px-3.5 py-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-sm text-[var(--fg-strong)]"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-zinc-400 mb-2">
+              <label className="block text-xs font-semibold text-[var(--muted)] mb-2">
                 Warna Aksen Program
               </label>
               <div className="flex items-center gap-2.5 flex-wrap">
@@ -669,7 +672,7 @@ export function LatihanTabsClient({
               <button
                 type="button"
                 onClick={() => setIsProgramModalOpen(false)}
-                className="flex-1 py-3 rounded-xl bg-zinc-800 text-zinc-300 font-semibold text-sm"
+                className="flex-1 py-3 rounded-xl bg-[var(--surface-2)] text-[var(--fg-soft)] font-semibold text-sm"
               >
                 Batal
               </button>

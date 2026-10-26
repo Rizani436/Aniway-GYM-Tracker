@@ -5,10 +5,17 @@ import { Dumbbell } from 'lucide-react';
 import { getMuscleVolumeAction } from '@/app/actions/statistik-actions';
 import type { MuscleVolume } from '@/app/actions/statistik-actions';
 import { MUSCLE_LABELS } from '@/lib/constants';
+import { toDisplayWeight, weightUnitLabel } from '@/lib/units';
 
 const PERIODES = [7, 30] as const;
 
-export function MuscleVolumeCard({ initialData }: { initialData: MuscleVolume[] }) {
+export function MuscleVolumeCard({
+  initialData,
+  weightUnit,
+}: {
+  initialData: MuscleVolume[];
+  weightUnit?: string;
+}) {
   const [days, setDays] = useState<7 | 30>(7);
   const [data, setData] = useState<MuscleVolume[]>(initialData);
   const [isPending, startTransition] = useTransition();
@@ -23,13 +30,13 @@ export function MuscleVolumeCard({ initialData }: { initialData: MuscleVolume[] 
 
   return (
     <div
-      className={`p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] transition-opacity ${
+      className={`p-4 rounded-2xl bg-[var(--card)] border border-[var(--border)] transition-opacity ${
         isPending ? 'opacity-60' : ''
       }`}
     >
       <CardHeader days={days} onSwitch={switchPeriod} />
       {!data.length ? (
-        <p className="text-xs text-zinc-400 text-center py-6">
+        <p className="text-xs text-[var(--muted)] text-center py-6">
           Belum ada latihan dalam {days} hari terakhir
         </p>
       ) : (
@@ -37,21 +44,21 @@ export function MuscleVolumeCard({ initialData }: { initialData: MuscleVolume[] 
           {toRows(data).map((r) => (
             <div key={r.muscle}>
               <div className="flex items-baseline justify-between gap-2 mb-1">
-                <span className="text-xs font-semibold text-zinc-200 truncate">
+                <span className="text-xs font-semibold text-[var(--fg-strong)] truncate">
                   {MUSCLE_LABELS[r.muscle] ?? r.muscle}
                 </span>
-                <span className="text-xs font-bold tabular-nums text-white shrink-0">
-                  {r.volume.toLocaleString('id-ID')}
-                  <span className="text-zinc-400 font-medium"> kg</span>
+                <span className="text-xs font-bold tabular-nums text-[var(--fg)] shrink-0">
+                  {Math.round(toDisplayWeight(r.volume, weightUnit)).toLocaleString('id-ID')}
+                  <span className="text-[var(--muted)] font-medium"> {weightUnitLabel(weightUnit)}</span>
                 </span>
               </div>
-              <div className="h-2 rounded-full bg-white/[0.05] overflow-hidden">
+              <div className="h-2 rounded-full bg-[var(--card-hover)] overflow-hidden">
                 <div
                   className="h-full rounded-full bg-emerald-500/80 transition-all"
                   style={{ width: `${Math.max((r.volume / r.maxVolume) * 100, 2)}%` }}
                 />
               </div>
-              <p className="text-[10px] text-zinc-500 mt-0.5">{r.sets} set</p>
+              <p className="text-[10px] text-[var(--muted-strong)] mt-0.5">{r.sets} set</p>
             </div>
           ))}
         </div>
@@ -76,7 +83,7 @@ function PeriodChip({
       className={`px-2 py-0.5 rounded-full text-[10px] font-semibold transition-colors ${
         active
           ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-          : 'bg-white/[0.05] text-zinc-500 border border-transparent hover:text-zinc-300'
+          : 'bg-[var(--card-hover)] text-[var(--muted-strong)] border border-transparent hover:text-[var(--fg-soft)]'
       }`}
     >
       {value} Hari
@@ -92,7 +99,7 @@ function CardHeader({
   onSwitch: (next: 7 | 30) => void;
 }) {
   return (
-    <div className="flex items-center gap-2 text-xs font-bold text-zinc-300 mb-2">
+    <div className="flex items-center gap-2 text-xs font-bold text-[var(--fg-soft)] mb-2">
       <Dumbbell className="w-4 h-4 text-emerald-400" />
       <span className="truncate">Volume {days} Hari Terakhir</span>
       <div className="ml-auto flex items-center gap-1 shrink-0">

@@ -135,15 +135,15 @@ export function ExerciseFormModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="bg-zinc-900 border-t sm:border border-zinc-800 w-full max-w-md max-h-[90vh] rounded-t-3xl sm:rounded-2xl flex flex-col overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
-          <h2 className="text-lg font-bold text-zinc-100">
+      <div className="bg-[var(--surface)] border-t sm:border border-[var(--border)] w-full max-w-md max-h-[90vh] rounded-t-3xl sm:rounded-2xl flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)]">
+          <h2 className="text-lg font-bold text-[var(--fg-strong)]">
             {initialData?.id ? 'Edit Gerakan' : 'Buat Gerakan Baru'}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-xl bg-zinc-800 text-zinc-400 hover:text-zinc-100"
+            className="p-2 rounded-xl bg-[var(--surface-2)] text-[var(--muted)] hover:text-[var(--fg-strong)]"
           >
             <X className="w-5 h-5" />
           </button>
@@ -164,7 +164,7 @@ export function ExerciseFormModal({
           )}
 
           <div>
-            <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+            <label className="block text-xs font-semibold text-[var(--muted)] mb-1.5">
               Nama Gerakan *
             </label>
             <input
@@ -173,13 +173,13 @@ export function ExerciseFormModal({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Contoh: Seated Row Machine (Close Grip)"
-              className="w-full px-3.5 py-3 bg-zinc-950 border border-zinc-800 rounded-xl text-zinc-100 focus:outline-none focus:border-emerald-500"
+              className="w-full px-3.5 py-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--fg-strong)] focus:outline-none focus:border-emerald-500"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+              <label className="block text-xs font-semibold text-[var(--muted)] mb-1.5">
                 Otot Utama *
               </label>
               <select
@@ -189,7 +189,7 @@ export function ExerciseFormModal({
                   setPrimaryMuscle(val);
                   setSecondaryMuscles((prev) => prev.filter((m) => m !== val));
                 }}
-                className="w-full px-3 py-3 bg-zinc-950 border border-zinc-800 rounded-xl text-zinc-100 focus:outline-none focus:border-emerald-500"
+                className="w-full px-3 py-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--fg-strong)] focus:outline-none focus:border-emerald-500"
               >
                 {Object.entries(MUSCLE_LABELS).map(([key, label]) => (
                   <option key={key} value={key}>
@@ -200,13 +200,13 @@ export function ExerciseFormModal({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+              <label className="block text-xs font-semibold text-[var(--muted)] mb-1.5">
                 Jenis Alat *
               </label>
               <select
                 value={equipment}
                 onChange={(e) => setEquipment(e.target.value as EquipmentType)}
-                className="w-full px-3 py-3 bg-zinc-950 border border-zinc-800 rounded-xl text-zinc-100 focus:outline-none focus:border-emerald-500"
+                className="w-full px-3 py-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--fg-strong)] focus:outline-none focus:border-emerald-500"
               >
                 {Object.entries(EQUIPMENT_LABELS).map(([key, label]) => (
                   <option key={key} value={key}>
@@ -218,7 +218,7 @@ export function ExerciseFormModal({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+            <label className="block text-xs font-semibold text-[var(--muted)] mb-1.5">
               Kenaikan Beban Alat / Increment (kg) *
             </label>
             <div className="flex flex-wrap gap-2 mb-2">
@@ -230,7 +230,7 @@ export function ExerciseFormModal({
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition ${
                     weightIncrement === inc
                       ? 'bg-emerald-500 text-zinc-950 border-emerald-500'
-                      : 'bg-zinc-950 text-zinc-300 border-zinc-800'
+                      : 'bg-[var(--bg)] text-[var(--fg-soft)] border-[var(--border)]'
                   }`}
                 >
                   +{inc} kg
@@ -243,12 +243,12 @@ export function ExerciseFormModal({
               inputMode="decimal"
               value={weightIncrement}
               onChange={(e) => setWeightIncrement(Number(e.target.value))}
-              className="w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-zinc-100"
+              className="w-full px-3.5 py-2.5 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--fg-strong)]"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+            <label className="block text-xs font-semibold text-[var(--muted)] mb-1.5">
               Otot Pendukung (Opsional)
             </label>
             <div className="flex flex-wrap gap-1.5">
@@ -264,7 +264,7 @@ export function ExerciseFormModal({
                     className={`px-2.5 py-1.5 rounded-lg text-xs font-medium border transition ${
                       active
                         ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300'
-                        : 'bg-zinc-950 border-zinc-800 text-zinc-400'
+                        : 'bg-[var(--bg)] border-[var(--border)] text-[var(--muted)]'
                     }`}
                   >
                     {label.split(' ')[0]}
@@ -275,7 +275,7 @@ export function ExerciseFormModal({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+            <label className="block text-xs font-semibold text-[var(--muted)] mb-1.5">
               Langkah-langkah Gerakan (1 baris = 1 langkah) *
             </label>
             <textarea
@@ -283,12 +283,12 @@ export function ExerciseFormModal({
               required
               value={stepsText}
               onChange={(e) => setStepsText(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-zinc-100 focus:outline-none focus:border-emerald-500"
+              className="w-full px-3.5 py-2.5 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--fg-strong)] focus:outline-none focus:border-emerald-500"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+            <label className="block text-xs font-semibold text-[var(--muted)] mb-1.5">
               Tips Teknik (1 baris = 1 tips)
             </label>
             <textarea
@@ -296,12 +296,12 @@ export function ExerciseFormModal({
               value={tipsText}
               onChange={(e) => setTipsText(e.target.value)}
               placeholder="Contoh: Jaga punggung tetap menempel pada sandaran"
-              className="w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-zinc-100 focus:outline-none focus:border-emerald-500"
+              className="w-full px-3.5 py-2.5 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--fg-strong)] focus:outline-none focus:border-emerald-500"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+            <label className="block text-xs font-semibold text-[var(--muted)] mb-1.5">
               Kesalahan Umum (1 baris = 1 poin)
             </label>
             <textarea
@@ -309,12 +309,12 @@ export function ExerciseFormModal({
               value={mistakesText}
               onChange={(e) => setMistakesText(e.target.value)}
               placeholder="Contoh: Mengayunkan badan berlebihan"
-              className="w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-zinc-100 focus:outline-none focus:border-emerald-500"
+              className="w-full px-3.5 py-2.5 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--fg-strong)] focus:outline-none focus:border-emerald-500"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+            <label className="block text-xs font-semibold text-[var(--muted)] mb-1.5">
               Gerakan Alternatif (1 baris = 1 nama alat/gerakan)
             </label>
             <textarea
@@ -322,12 +322,12 @@ export function ExerciseFormModal({
               value={alternativesText}
               onChange={(e) => setAlternativesText(e.target.value)}
               placeholder="Contoh: Seated Cable Row"
-              className="w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-zinc-100 focus:outline-none focus:border-emerald-500"
+              className="w-full px-3.5 py-2.5 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--fg-strong)] focus:outline-none focus:border-emerald-500"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+            <label className="block text-xs font-semibold text-[var(--muted)] mb-1.5">
               Foto Gerakan (opsional)
             </label>
             <div className="flex items-center gap-3">
@@ -335,16 +335,16 @@ export function ExerciseFormModal({
                 <img
                   src={imageUrl}
                   alt="Foto gerakan"
-                  className="w-14 h-[72px] object-contain rounded-xl bg-zinc-950 border border-zinc-800"
+                  className="w-14 h-[72px] object-contain rounded-xl bg-[var(--bg)] border border-[var(--border)]"
                 />
               ) : (
-                <div className="w-14 h-[72px] rounded-xl bg-zinc-950 border border-dashed border-zinc-700 flex items-center justify-center">
-                  <Dumbbell className="w-5 h-5 text-zinc-600" />
+                <div className="w-14 h-[72px] rounded-xl bg-[var(--bg)] border border-dashed border-[var(--border)] flex items-center justify-center">
+                  <Dumbbell className="w-5 h-5 text-[var(--muted-strong)]" />
                 </div>
               )}
               <div className="flex-1 space-y-1.5">
                 <label className="block">
-                  <span className="inline-block px-3 py-2 rounded-lg bg-zinc-800 text-zinc-200 text-xs font-semibold cursor-pointer hover:bg-zinc-700">
+                  <span className="inline-block px-3 py-2 rounded-lg bg-[var(--surface-2)] text-[var(--fg-strong)] text-xs font-semibold cursor-pointer hover:bg-[var(--surface-3)]">
                     {uploading ? 'Mengunggah...' : 'Pilih Foto'}
                   </span>
                   <input
@@ -375,7 +375,7 @@ export function ExerciseFormModal({
                     }}
                   />
                 </label>
-                <p className="text-[10px] text-zinc-500">JPG/PNG/WebP, maks 2 MB.</p>
+                <p className="text-[10px] text-[var(--muted-strong)]">JPG/PNG/WebP, maks 2 MB.</p>
                 {imageUrl && (
                   <button
                     type="button"
@@ -390,7 +390,7 @@ export function ExerciseFormModal({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+            <label className="block text-xs font-semibold text-[var(--muted)] mb-1.5">
               URL Video Panduan (YouTube / Lainnya)
             </label>
             <input
@@ -398,7 +398,7 @@ export function ExerciseFormModal({
               value={videoUrl}
               onChange={(e) => setVideoUrl(e.target.value)}
               placeholder="https://www.youtube.com/watch?v=..."
-              className="w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-zinc-100 focus:outline-none focus:border-emerald-500"
+              className="w-full px-3.5 py-2.5 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--fg-strong)] focus:outline-none focus:border-emerald-500"
             />
           </div>
 
@@ -406,7 +406,7 @@ export function ExerciseFormModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-3.5 rounded-xl bg-zinc-800 text-zinc-300 font-semibold"
+              className="flex-1 py-3.5 rounded-xl bg-[var(--surface-2)] text-[var(--fg-soft)] font-semibold"
             >
               Batal
             </button>

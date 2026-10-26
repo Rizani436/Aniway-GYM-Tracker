@@ -27,6 +27,7 @@ import { id as localeId } from 'date-fns/locale';
 import Link from 'next/link';
 
 import { cn } from '@/lib/utils';
+import { toDisplayWeight, roundWeight, weightUnitLabel } from '@/lib/units';
 
 import { ExerciseSetRow, type SetRowData } from './exercise-set-row';
 import { PlateCalculatorSheet } from './plate-calculator-sheet';
@@ -212,6 +213,9 @@ export function WorkoutRunner({
   // Turunan aman: `user` boleh null saat offline (data dari snapshot perangkat).
   const currentUser = user ?? snapshot?.user ?? null;
   const restDefault = currentUser?.defaultRestTimer ?? 90;
+  // Satuan tampilan beban (state tetap kanonik KG).
+  const unit = currentUser?.weightUnit ?? 'KG';
+  const unitLabel = weightUnitLabel(unit);
   const storageKey = `besilog_workout_draft_${currentUser?.id ?? 'offline'}`;
 
   // Helper membuat initial exercises dari program
@@ -803,7 +807,7 @@ export function WorkoutRunner({
             <AlertCircle className="w-5 h-5 text-amber-400 shrink-0" />
             <div>
               <p className="text-xs font-bold text-amber-300">Draft Sesi Ditemukan</p>
-              <p className="text-[11px] text-zinc-400">
+              <p className="text-[11px] text-[var(--muted)]">
                 Dimulai pukul {draftBanner.date}. Lanjutkan latihan?
               </p>
             </div>
@@ -819,7 +823,7 @@ export function WorkoutRunner({
             <button
               type="button"
               onClick={handleDiscardDraft}
-              className="px-2 py-1 bg-zinc-800 text-zinc-400 hover:text-white rounded-lg text-xs"
+              className="px-2 py-1 bg-[var(--surface-2)] text-[var(--muted)] hover:text-[var(--fg)] rounded-lg text-xs"
             >
               Hapus
             </button>
@@ -828,11 +832,11 @@ export function WorkoutRunner({
       )}
 
       {/* Top Header / Sticky Bar — 2 baris: judul utuh di atas, meta di bawah */}
-      <div className="sticky top-0 z-30 bg-[#08090a]/95 backdrop-blur-xl border-b border-white/[0.08] -mx-4 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 mb-4">
+      <div className="sticky top-0 z-30 bg-[var(--bg)] backdrop-blur-xl border-b border-[var(--border)] -mx-4 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 mb-4">
         <div className="flex items-center gap-2">
           <Link
             href="/"
-            className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-zinc-300 active:scale-90 transition-transform shrink-0 touch-manipulation"
+            className="w-10 h-10 rounded-xl bg-[var(--card)] border border-[var(--border)] flex items-center justify-center text-[var(--fg-soft)] active:scale-90 transition-transform shrink-0 touch-manipulation"
             aria-label="Kembali ke beranda"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -843,7 +847,7 @@ export function WorkoutRunner({
             type="text"
             value={sessionName}
             onChange={(e) => setSessionName(e.target.value)}
-            className="flex-1 min-w-0 bg-transparent font-extrabold text-white text-base focus:outline-none truncate"
+            className="flex-1 min-w-0 bg-transparent font-extrabold text-[var(--fg)] text-base focus:outline-none truncate"
             placeholder="Nama Sesi Latihan..."
             aria-label="Nama sesi latihan"
           />
@@ -861,20 +865,20 @@ export function WorkoutRunner({
         </div>
 
         {/* Baris meta: timer · volume live · kalkulator plat */}
-        <div className="flex items-center gap-3 text-xs text-zinc-400 mt-1.5 pl-[3rem]">
+        <div className="flex items-center gap-3 text-xs text-[var(--muted)] mt-1.5 pl-[3rem]">
           <span className="flex items-center gap-1 font-mono text-emerald-400 font-bold tabular-nums">
             <Timer className="w-3.5 h-3.5" />
             {formatTimer(elapsedSeconds)}
           </span>
           <span aria-hidden="true">•</span>
-          <span className="font-mono text-zinc-300 tabular-nums">
-            {liveVolume.toLocaleString('id-ID')} kg
+          <span className="font-mono text-[var(--fg-soft)] tabular-nums">
+            {Math.round(toDisplayWeight(liveVolume, unit)).toLocaleString('id-ID')} {unitLabel}
           </span>
-          <PlateCalculatorSheet className="ml-auto w-9 h-9 rounded-lg bg-transparent border-transparent text-zinc-400" />
+          <PlateCalculatorSheet className="ml-auto w-9 h-9 rounded-lg bg-transparent border-transparent text-[var(--muted)]" />
           <button
             type="button"
             onClick={() => setIsProgramPickerOpen(true)}
-            className="w-9 h-9 rounded-lg bg-transparent border border-white/[0.08] text-zinc-300 flex items-center justify-center active:scale-90 transition-transform hover:text-emerald-400"
+            className="w-9 h-9 rounded-lg bg-transparent border border-[var(--border)] text-[var(--fg-soft)] flex items-center justify-center active:scale-90 transition-transform hover:text-emerald-400"
             aria-label="Pilih program latihan"
             title="Pilih program latihan"
           >
@@ -890,22 +894,22 @@ export function WorkoutRunner({
           onClick={() => setIsProgramPickerOpen(false)}
         >
           <div
-            className="bg-[#121314] border border-white/[0.08] rounded-3xl w-full max-w-md max-h-[70vh] overflow-y-auto p-4 space-y-2"
+            className="bg-[var(--surface)] border border-[var(--border)] rounded-3xl w-full max-w-md max-h-[70vh] overflow-y-auto p-4 space-y-2"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-2">
-              <h3 className="font-bold text-white">Pilih Program Latihan</h3>
+              <h3 className="font-bold text-[var(--fg)]">Pilih Program Latihan</h3>
               <button
                 type="button"
                 onClick={() => setIsProgramPickerOpen(false)}
-                className="w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center text-zinc-400 active:scale-90"
+                className="w-8 h-8 rounded-lg bg-[var(--card)] flex items-center justify-center text-[var(--muted)] active:scale-90"
                 aria-label="Tutup"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
             {userPrograms.length === 0 ? (
-              <p className="text-xs text-zinc-400 text-center py-6">
+              <p className="text-xs text-[var(--muted)] text-center py-6">
                 Belum ada program. Buat dulu di tab Latihan.
               </p>
             ) : (
@@ -918,11 +922,11 @@ export function WorkoutRunner({
                     'w-full text-left p-3 rounded-2xl border transition-all active:scale-[0.98] space-y-1',
                     prog.id === programId
                       ? 'bg-emerald-500/10 border-emerald-500/40'
-                      : 'bg-white/[0.03] border-white/[0.06] hover:border-white/[0.15]'
+                      : 'bg-[var(--card)] border-[var(--border)] hover:border-[var(--border-strong)]'
                   )}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-bold text-white text-sm truncate">
+                    <span className="font-bold text-[var(--fg)] text-sm truncate">
                       {prog.name}
                     </span>
                     {prog.id === programId && (
@@ -931,7 +935,7 @@ export function WorkoutRunner({
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-zinc-400">
+                  <p className="text-xs text-[var(--muted)]">
                     {(prog.exercises || []).length} gerakan
                   </p>
                 </button>
@@ -970,13 +974,13 @@ export function WorkoutRunner({
             </button>
           </div>
         ) : exercises.length === 0 ? (
-          <div className="bg-white/[0.02] border border-dashed border-white/[0.08] rounded-3xl p-8 text-center space-y-3">
-            <div className="w-12 h-12 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center mx-auto text-zinc-400">
+          <div className="bg-[var(--card)] border border-dashed border-[var(--border)] rounded-3xl p-8 text-center space-y-3">
+            <div className="w-12 h-12 rounded-2xl bg-[var(--card)] border border-[var(--border)] flex items-center justify-center mx-auto text-[var(--muted)]">
               <Dumbbell className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="font-bold text-white text-base">Belum Ada Gerakan</h3>
-              <p className="text-xs text-zinc-400 max-w-xs mx-auto mt-1">
+              <h3 className="font-bold text-[var(--fg)] text-base">Belum Ada Gerakan</h3>
+              <p className="text-xs text-[var(--muted)] max-w-xs mx-auto mt-1">
                 Mulai latihan dengan menambahkan gerakan atau pilih dari program yang tersedia.
               </p>
             </div>
@@ -1005,10 +1009,10 @@ export function WorkoutRunner({
             <div
               key={`${ex.exerciseId}_${exIndex}`}
               className={cn(
-                'bg-white/[0.03] border rounded-2xl shadow-sm transition-colors',
+                'bg-[var(--card)] border rounded-2xl shadow-sm transition-colors',
                 isExpanded
-                  ? 'border-white/[0.07] p-3.5 space-y-3'
-                  : 'border-white/[0.05] p-2.5 space-y-2'
+                  ? 'border-[var(--border)] p-3.5 space-y-3'
+                  : 'border-[var(--border)] p-2.5 space-y-2'
               )}
             >
               {/* Exercise Card Header — tap untuk buka/tutup kartu */}
@@ -1020,7 +1024,7 @@ export function WorkoutRunner({
                   className="flex items-start gap-2.5 min-w-0 flex-1 text-left active:opacity-80 transition-opacity"
                 >
                   {ex.imageUrl && (
-                    <span className="relative w-11 h-14 rounded-xl overflow-hidden border border-white/[0.1] bg-[#0f1011] shrink-0 block">
+                    <span className="relative w-11 h-14 rounded-xl overflow-hidden border border-[var(--border)] bg-[var(--bg-soft)] shrink-0 block">
                       <img
                         src={ex.imageUrl}
                         alt={ex.name}
@@ -1031,19 +1035,19 @@ export function WorkoutRunner({
                   )}
                   <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-white text-sm">{ex.name}</h3>
+                    <h3 className="font-bold text-[var(--fg)] text-sm">{ex.name}</h3>
                     {allDone && (
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                     )}
                   </div>
-                  <div className="flex items-center gap-1.5 mt-1 flex-wrap text-[11px] text-zinc-400">
+                  <div className="flex items-center gap-1.5 mt-1 flex-wrap text-[11px] text-[var(--muted)]">
                     <span className="text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 font-medium">
                       {MUSCLE_TRANSLATIONS[ex.primaryMuscle]}
                     </span>
                     <span aria-hidden="true">•</span>
                     <span>{EQUIPMENT_TRANSLATIONS[ex.equipment]}</span>
                     <span aria-hidden="true">•</span>
-                    <span className="font-mono whitespace-nowrap">±{ex.weightIncrement}kg</span>
+                    <span className="font-mono whitespace-nowrap">±{roundWeight(ex.weightIncrement, unit)}{unitLabel}</span>
                     {ex.notes && (
                       <>
                         <span aria-hidden="true">•</span>
@@ -1060,7 +1064,7 @@ export function WorkoutRunner({
                           className={`font-mono whitespace-nowrap px-1.5 py-0.5 rounded border ${
                             allDone || doneSets >= ex.targetSets
                               ? 'text-emerald-400 border-emerald-500/20 bg-emerald-500/10'
-                              : 'text-zinc-400 border-white/[0.08] bg-white/[0.04]'
+                              : 'text-[var(--muted)] border-[var(--border)] bg-[var(--card)]'
                           }`}
                         >
                           {doneSets}/{ex.targetSets}×
@@ -1072,7 +1076,7 @@ export function WorkoutRunner({
                     )}
                     {/* Saat kartu terlipat, tampilkan ringkasan set agar tak perlu dibuka */}
                     {!isExpanded && (
-                      <span className="font-mono whitespace-nowrap text-zinc-500 tabular-nums">
+                      <span className="font-mono whitespace-nowrap text-[var(--muted-strong)] tabular-nums">
                         {doneSets}/{totalSets} set
                       </span>
                     )}
@@ -1091,7 +1095,7 @@ export function WorkoutRunner({
                           expandedImageIdx === exIndex ? null : exIndex
                         )
                       }
-                      className="p-1.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-zinc-400 hover:text-emerald-300 transition-colors"
+                      className="p-1.5 rounded-lg bg-[var(--card-hover)] hover:bg-[var(--card-hover)] text-[var(--muted)] hover:text-emerald-300 transition-colors"
                       title={expandedImageIdx === exIndex ? 'Tutup foto cara' : 'Lihat foto cara gerakan'}
                       aria-label={`Lihat cara gerakan ${ex.name}`}
                     >
@@ -1101,7 +1105,7 @@ export function WorkoutRunner({
                   <button
                     type="button"
                     onClick={() => toggleCard(exIndex)}
-                    className="p-1.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-zinc-400 transition-colors"
+                    className="p-1.5 rounded-lg bg-[var(--card-hover)] hover:bg-[var(--card-hover)] text-[var(--muted)] transition-colors"
                     title={isExpanded ? 'Lipat gerakan' : 'Buka gerakan'}
                     aria-label={isExpanded ? `Lipat ${ex.name}` : `Buka ${ex.name}`}
                   >
@@ -1119,7 +1123,7 @@ export function WorkoutRunner({
                         swappingName: ex.name,
                       })
                     }
-                    className="p-1.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-zinc-400 hover:text-amber-300 transition-colors"
+                    className="p-1.5 rounded-lg bg-[var(--card-hover)] hover:bg-[var(--card-hover)] text-[var(--muted)] hover:text-amber-300 transition-colors"
                     title="Ganti gerakan (alat penuh/terpakai)"
                   >
                     <Replace className="w-4 h-4" />
@@ -1127,7 +1131,7 @@ export function WorkoutRunner({
                   <button
                     type="button"
                     onClick={() => handleDeleteExercise(exIndex)}
-                    className="p-1.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-zinc-400 hover:text-rose-400 transition-colors"
+                    className="p-1.5 rounded-lg bg-[var(--card-hover)] hover:bg-[var(--card-hover)] text-[var(--muted)] hover:text-rose-400 transition-colors"
                     title="Hapus gerakan dari sesi ini"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -1141,7 +1145,7 @@ export function WorkoutRunner({
                   Preset umum di gym + step kecil; nilai ini dipakai timer begitu
                   set berikutnya dicentang (dan tersimpan di draft sesi). */}
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-zinc-500 shrink-0">
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-[var(--muted-strong)] shrink-0">
                   <Timer className="w-3 h-3" />
                   Istirahat
                 </span>
@@ -1154,7 +1158,7 @@ export function WorkoutRunner({
                       'h-7 px-2 rounded-lg text-[11px] font-bold font-mono tabular-nums transition-colors touch-manipulation',
                       ex.restSeconds === detik
                         ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                        : 'bg-white/[0.05] text-zinc-400 border border-transparent active:bg-white/[0.12]'
+                        : 'bg-[var(--card-hover)] text-[var(--muted)] border border-transparent active:bg-[var(--card-hover)]'
                     )}
                     title={`Istirahat ${detik} detik`}
                     aria-pressed={ex.restSeconds === detik}
@@ -1166,7 +1170,7 @@ export function WorkoutRunner({
                   <button
                     type="button"
                     onClick={() => handleUpdateExerciseRest(exIndex, (ex.restSeconds || 0) - 15)}
-                    className="w-6 h-7 rounded-lg bg-white/[0.05] text-zinc-300 flex items-center justify-center active:scale-90 transition-transform touch-manipulation"
+                    className="w-6 h-7 rounded-lg bg-[var(--card-hover)] text-[var(--fg-soft)] flex items-center justify-center active:scale-90 transition-transform touch-manipulation"
                     aria-label="Kurangi istirahat 15 detik"
                   >
                     <Minus className="w-3 h-3" />
@@ -1174,7 +1178,7 @@ export function WorkoutRunner({
                   <button
                     type="button"
                     onClick={() => handleUpdateExerciseRest(exIndex, (ex.restSeconds || 0) + 15)}
-                    className="w-6 h-7 rounded-lg bg-white/[0.05] text-zinc-300 flex items-center justify-center active:scale-90 transition-transform touch-manipulation"
+                    className="w-6 h-7 rounded-lg bg-[var(--card-hover)] text-[var(--fg-soft)] flex items-center justify-center active:scale-90 transition-transform touch-manipulation"
                     aria-label="Tambah istirahat 15 detik"
                   >
                     <Plus className="w-3 h-3" />
@@ -1197,9 +1201,9 @@ export function WorkoutRunner({
                         src={ex.imageUrl!.replace(/0\.jpg$/, `${i}.jpg`)}
                         alt={`${ex.name} — posisi ${i === 0 ? 'awal' : 'akhir'}`}
                         loading="lazy"
-                        className="w-full aspect-[3/4] object-contain rounded-xl bg-[#0f1011] border border-white/[0.08]"
+                        className="w-full aspect-[3/4] object-contain rounded-xl bg-[var(--bg-soft)] border border-[var(--border)]"
                       />
-                      <span className="absolute top-1.5 left-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded bg-black/60 text-zinc-300">
+                      <span className="absolute top-1.5 left-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded bg-black/60 text-[var(--fg-soft)]">
                         {i === 0 ? 'Awal' : 'Akhir'}
                       </span>
                     </div>
@@ -1222,9 +1226,9 @@ export function WorkoutRunner({
 
               {/* Sets Table Header — grid identik dengan ExerciseSetRow (kolom mustahil tidak sejajar).
                   Di <340px grid turun ke 3 kolom & label Reps disembunyikan (field Reps ada di baris 2). */}
-              <div className="grid grid-cols-[32px_1fr_1fr_36px] max-[340px]:grid-cols-[32px_1fr_36px] gap-1.5 items-center px-1.5 text-[9px] font-bold uppercase tracking-wider text-zinc-500">
+              <div className="grid grid-cols-[32px_1fr_1fr_36px] max-[340px]:grid-cols-[32px_1fr_36px] gap-1.5 items-center px-1.5 text-[9px] font-bold uppercase tracking-wider text-[var(--muted-strong)]">
                 <span className="text-center">Set</span>
-                <span className="text-center">Beban</span>
+                <span className="text-center">Beban ({unitLabel})</span>
                 <span className="text-center max-[340px]:hidden">Reps</span>
                 <span className="text-center" aria-label="Selesai">
                   ✓
@@ -1239,6 +1243,7 @@ export function WorkoutRunner({
                     set={set}
                     index={sIndex}
                     weightIncrement={ex.weightIncrement}
+                    weightUnit={unit}
                     // Set aktif = set pertama yang belum dicentang
                     isActive={!set.isCompleted && !ex.sets.slice(0, sIndex).some((s) => !s.isCompleted)}
                     onChange={(updated) => handleUpdateSet(exIndex, sIndex, updated)}
@@ -1253,7 +1258,7 @@ export function WorkoutRunner({
               <button
                 type="button"
                 onClick={() => handleAddSet(exIndex)}
-                className="w-full py-2 bg-white/[0.02] hover:bg-white/[0.05] text-zinc-300 hover:text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all border border-dashed border-white/[0.08]"
+                className="w-full py-2 bg-[var(--card)] hover:bg-[var(--card-hover)] text-[var(--fg-soft)] hover:text-[var(--fg)] rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all border border-dashed border-[var(--border)]"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Tambah Set
@@ -1263,14 +1268,14 @@ export function WorkoutRunner({
               <button
                 type="button"
                 onClick={() => setOpenNoteIdx(openNoteIdx === exIndex ? null : exIndex)}
-                className="w-full text-left px-3 py-2 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/[0.07] flex items-start gap-2 transition-colors"
+                className="w-full text-left px-3 py-2 rounded-xl bg-[var(--card)] hover:bg-[var(--card-hover)] border border-[var(--border)] flex items-start gap-2 transition-colors"
               >
-                <StickyNote className={cn('w-3.5 h-3.5 shrink-0 mt-0.5', ex.notes ? 'text-amber-400' : 'text-zinc-500')} />
-                <span className={cn('text-[11px] flex-1 min-w-0', ex.notes ? 'text-amber-200/90 whitespace-pre-wrap' : 'text-zinc-500')}>
+                <StickyNote className={cn('w-3.5 h-3.5 shrink-0 mt-0.5', ex.notes ? 'text-amber-400' : 'text-[var(--muted-strong)]')} />
+                <span className={cn('text-[11px] flex-1 min-w-0', ex.notes ? 'text-amber-200/90 whitespace-pre-wrap' : 'text-[var(--muted-strong)]')}>
                   {ex.notes || 'Tambah catatan gerakan…'}
                 </span>
                 {(ex.historyInfo?.noteHistory?.length ?? 0) > 0 && (
-                  <span className="text-[9px] font-bold font-mono px-1.5 py-0.5 rounded bg-white/[0.06] text-zinc-400 shrink-0 tabular-nums">
+                  <span className="text-[9px] font-bold font-mono px-1.5 py-0.5 rounded bg-[var(--card-hover)] text-[var(--muted)] shrink-0 tabular-nums">
                     {ex.historyInfo?.noteHistory?.length} riwayat
                   </span>
                 )}
@@ -1283,22 +1288,22 @@ export function WorkoutRunner({
                     onChange={(e) => handleUpdateExerciseNotes(exIndex, e.target.value)}
                     placeholder="Catatan gerakan (mis. pin no. 5, bahu kiri nyeri, ganti grip lebar…)"
                     rows={2}
-                    className="w-full px-3 py-2.5 bg-white/[0.03] border border-white/[0.08] rounded-xl text-[12px] text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/60 focus:ring-1 focus:ring-amber-500/30 resize-none transition-colors"
+                    className="w-full px-3 py-2.5 bg-[var(--card)] border border-[var(--border)] rounded-xl text-[12px] text-[var(--fg-strong)] placeholder:text-[var(--muted-strong)] focus:outline-none focus:border-amber-500/60 focus:ring-1 focus:ring-amber-500/30 resize-none transition-colors"
                   />
                   {(ex.historyInfo?.noteHistory?.length ?? 0) > 0 && (
-                    <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-2.5 space-y-1.5">
-                      <p className="text-[9px] font-bold uppercase tracking-wider text-zinc-500">Catatan sebelumnya — tap untuk pakai</p>
+                    <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-2.5 space-y-1.5">
+                      <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--muted-strong)]">Catatan sebelumnya — tap untuk pakai</p>
                       {ex.historyInfo!.noteHistory.map((n, i) => (
                         <button
                           key={i}
                           type="button"
                           onClick={() => handleUpdateExerciseNotes(exIndex, n.notes)}
-                          className="w-full text-left flex items-start gap-2 px-2 py-1.5 rounded-lg hover:bg-white/[0.05] active:bg-white/[0.08] transition-colors"
+                          className="w-full text-left flex items-start gap-2 px-2 py-1.5 rounded-lg hover:bg-[var(--card-hover)] active:bg-[var(--card-hover)] transition-colors"
                         >
-                          <span className="text-[9px] font-bold font-mono text-zinc-500 shrink-0 mt-0.5 tabular-nums whitespace-nowrap">
+                          <span className="text-[9px] font-bold font-mono text-[var(--muted-strong)] shrink-0 mt-0.5 tabular-nums whitespace-nowrap">
                             {format(new Date(n.date), 'd MMM', { locale: localeId })}
                           </span>
-                          <span className="text-[11px] text-zinc-300 flex-1 min-w-0 whitespace-pre-wrap">{n.notes}</span>
+                          <span className="text-[11px] text-[var(--fg-soft)] flex-1 min-w-0 whitespace-pre-wrap">{n.notes}</span>
                         </button>
                       ))}
                     </div>
@@ -1322,7 +1327,7 @@ export function WorkoutRunner({
                 mode: 'add',
               })
             }
-            className="w-full py-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] hover:border-white/[0.14] text-zinc-200 hover:text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-sm active:scale-[0.99]"
+            className="w-full py-3.5 rounded-2xl bg-[var(--card)] border border-[var(--border)] hover:border-[var(--border-strong)] text-[var(--fg-strong)] hover:text-[var(--fg)] font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-sm active:scale-[0.99]"
           >
             <Plus className="w-4 h-4 text-emerald-400 stroke-[2.5]" />
             Tambah Gerakan Lain
@@ -1335,7 +1340,7 @@ export function WorkoutRunner({
           onChange={(e) => setSessionNotes(e.target.value)}
           placeholder="Catatan sesi (perasaan, kondisi tubuh, catatan alat…)"
           rows={2}
-          className="w-full px-3.5 py-3 bg-white/[0.03] border border-white/[0.08] rounded-2xl text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/40 resize-none transition-colors"
+          className="w-full px-3.5 py-3 bg-[var(--card)] border border-[var(--border)] rounded-2xl text-sm text-[var(--fg-strong)] placeholder:text-[var(--muted-strong)] focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/40 resize-none transition-colors"
         />
       </div>
 
@@ -1346,10 +1351,10 @@ export function WorkoutRunner({
           onClick={() => setPendingFinish(null)}
         >
           <div
-            className="w-full max-w-sm bg-[#101113] border border-white/[0.1] rounded-2xl p-5 animate-in fade-in"
+            className="w-full max-w-sm bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-5 animate-in fade-in"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-base font-bold text-white">Belum semua target tercapai</h3>
+            <h3 className="text-base font-bold text-[var(--fg)]">Belum semua target tercapai</h3>
             <div className="mt-3 space-y-1.5">
               {pendingFinish.map((t) => (
                 <p key={t.name} className="text-xs font-semibold text-amber-400">
@@ -1361,7 +1366,7 @@ export function WorkoutRunner({
               <button
                 type="button"
                 onClick={() => setPendingFinish(null)}
-                className="w-full py-2.5 rounded-xl bg-white/[0.05] border border-white/[0.08] text-sm font-semibold text-zinc-300 active:scale-[0.98] transition-transform touch-manipulation"
+                className="w-full py-2.5 rounded-xl bg-[var(--card-hover)] border border-[var(--border)] text-sm font-semibold text-[var(--fg-soft)] active:scale-[0.98] transition-transform touch-manipulation"
               >
                 Lanjutkan Latihan
               </button>
@@ -1397,6 +1402,7 @@ export function WorkoutRunner({
         availableExercises={availableExercises}
         mode={exerciseModalState.mode}
         swappingExerciseName={exerciseModalState.swappingName}
+        weightUnit={unit}
         onSelect={handleSelectExerciseFromModal}
       />
 
@@ -1407,6 +1413,7 @@ export function WorkoutRunner({
         totalVolume={summaryData.totalVolume}
         totalSets={summaryData.totalSets}
         newPRs={summaryData.newPRs}
+        weightUnit={unit}
         queuedOffline={summaryData.queuedOffline}
         targetStats={targetStats}
         onClose={() => {

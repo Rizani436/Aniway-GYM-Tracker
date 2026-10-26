@@ -42,7 +42,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#08090a] text-[#f7f8f8] flex flex-col justify-center px-4 py-8 max-w-md mx-auto">
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--fg)] flex flex-col justify-center px-4 py-8 max-w-md mx-auto">
       {/* Brand Header */}
       <div className="flex flex-col items-center text-center mb-6">
         <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center mb-3 text-emerald-400 shadow-[0_0_24px_rgba(16,185,129,0.15)]">
@@ -50,22 +50,22 @@ export default function LoginPage() {
         </div>
         <div className="flex items-center gap-1.5 mb-1">
           <span className="w-2 h-2 rounded-full bg-emerald-400" />
-          <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted)]">
             Aniway Tracker
           </span>
         </div>
-        <h1 className="text-2xl font-black tracking-tight text-white">
+        <h1 className="text-2xl font-black tracking-tight text-[var(--fg)]">
           {mode === 'login' ? 'Selamat Datang' : 'Mulai Perjalanan'}
         </h1>
-        <p className="text-xs text-zinc-400 mt-1 max-w-xs leading-relaxed">
+        <p className="text-xs text-[var(--muted)] mt-1 max-w-xs leading-relaxed">
           Catat progressive overload mesin gym dengan cepat & presisi.
         </p>
       </div>
 
       {/* Main Card */}
-      <div className="bg-white/[0.03] border border-white/[0.08] rounded-3xl p-5 shadow-[0_12px_40px_rgba(0,0,0,0.8)] backdrop-blur-xl">
+      <div className="bg-[var(--card)] border border-[var(--border)] rounded-3xl p-5 shadow-[0_12px_40px_rgba(0,0,0,0.8)] backdrop-blur-xl">
         {/* Tab Switcher */}
-        <div className="grid grid-cols-2 gap-1.5 p-1 bg-white/[0.04] border border-white/[0.06] rounded-2xl mb-5">
+        <div className="grid grid-cols-2 gap-1.5 p-1 bg-[var(--card)] border border-[var(--border)] rounded-2xl mb-5">
           <button
             type="button"
             onClick={() => {
@@ -75,7 +75,7 @@ export default function LoginPage() {
             className={`py-2 text-xs font-bold rounded-xl transition-all active:scale-95 ${
               mode === 'login'
                 ? 'bg-emerald-500 text-zinc-950 font-extrabold shadow-sm'
-                : 'text-zinc-400 hover:text-white'
+                : 'text-[var(--muted)] hover:text-[var(--fg)]'
             }`}
           >
             Masuk
@@ -89,7 +89,7 @@ export default function LoginPage() {
             className={`py-2 text-xs font-bold rounded-xl transition-all active:scale-95 ${
               mode === 'register'
                 ? 'bg-emerald-500 text-zinc-950 font-extrabold shadow-sm'
-                : 'text-zinc-400 hover:text-white'
+                : 'text-[var(--muted)] hover:text-[var(--fg)]'
             }`}
           >
             Daftar Baru
@@ -105,51 +105,51 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="space-y-3.5">
           {mode === 'register' && (
             <div>
-              <label className="block text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-1.5">
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-[var(--muted)] mb-1.5">
                 Nama Panggilan
               </label>
               <div className="relative">
-                <User className="w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <User className="w-4 h-4 text-[var(--muted-strong)] absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
                   name="name"
                   type="text"
                   required
                   placeholder="Contoh: Budi"
-                  className="w-full pl-10 pr-3.5 py-2.5 bg-black/40 border border-white/[0.08] focus:border-emerald-500 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none transition-colors"
+                  className="w-full pl-10 pr-3.5 py-2.5 bg-[var(--input)] border border-[var(--border)] focus:border-emerald-500 rounded-xl text-sm text-[var(--fg)] placeholder-[var(--muted-strong)] focus:outline-none transition-colors"
                 />
               </div>
             </div>
           )}
 
           <div>
-            <label className="block text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-1.5">
+            <label className="block text-[11px] font-semibold uppercase tracking-wider text-[var(--muted)] mb-1.5">
               Alamat Email
             </label>
             <div className="relative">
-              <Mail className="w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <Mail className="w-4 h-4 text-[var(--muted-strong)] absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 name="email"
                 type="email"
                 required
                 placeholder="nama@email.com"
-                className="w-full pl-10 pr-3.5 py-2.5 bg-black/40 border border-white/[0.08] focus:border-emerald-500 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none transition-colors"
+                className="w-full pl-10 pr-3.5 py-2.5 bg-[var(--input)] border border-[var(--border)] focus:border-emerald-500 rounded-xl text-sm text-[var(--fg)] placeholder-[var(--muted-strong)] focus:outline-none transition-colors"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-1.5">
+            <label className="block text-[11px] font-semibold uppercase tracking-wider text-[var(--muted)] mb-1.5">
               Password
             </label>
             <div className="relative">
-              <Lock className="w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <Lock className="w-4 h-4 text-[var(--muted-strong)] absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 name="password"
                 type="password"
                 required
                 minLength={6}
                 placeholder="Minimal 6 karakter"
-                className="w-full pl-10 pr-3.5 py-2.5 bg-black/40 border border-white/[0.08] focus:border-emerald-500 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none transition-colors"
+                className="w-full pl-10 pr-3.5 py-2.5 bg-[var(--input)] border border-[var(--border)] focus:border-emerald-500 rounded-xl text-sm text-[var(--fg)] placeholder-[var(--muted-strong)] focus:outline-none transition-colors"
               />
             </div>
           </div>
@@ -166,10 +166,10 @@ export default function LoginPage() {
 
         <div className="relative my-4">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-white/[0.08]" />
+            <div className="w-full border-t border-[var(--border)]" />
           </div>
           <div className="relative flex justify-center text-[10px] uppercase tracking-wider">
-            <span className="bg-[#0f1011] px-2.5 text-zinc-500">Atau</span>
+            <span className="bg-[var(--bg-soft)] px-2.5 text-[var(--muted-strong)]">Atau</span>
           </div>
         </div>
 
@@ -177,7 +177,7 @@ export default function LoginPage() {
           type="button"
           onClick={handleGoogleLogin}
           disabled={isPending || isGoogleLoading}
-          className="w-full py-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.07] border border-white/[0.08] text-white font-medium text-xs transition-all flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95"
+          className="w-full py-2.5 rounded-xl bg-[var(--card)] hover:bg-[var(--card-hover)] border border-[var(--border)] text-[var(--fg)] font-medium text-xs transition-all flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95"
         >
           {isGoogleLoading ? (
             <Loader2 className="w-4 h-4 animate-spin" />

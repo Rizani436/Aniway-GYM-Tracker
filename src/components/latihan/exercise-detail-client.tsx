@@ -18,6 +18,7 @@ import {
 import { getExerciseByIdAction, deleteExerciseAction } from '@/app/actions/latihan-actions';
 import type { ProgressPoint } from '@/app/actions/statistik-actions';
 import { MUSCLE_LABELS, EQUIPMENT_LABELS } from '@/lib/constants';
+import { roundWeight, weightUnitLabel } from '@/lib/units';
 import { ExerciseFormModal } from './exercise-form-modal';
 import { ExerciseProgressChart } from './exercise-progress-chart';
 
@@ -27,10 +28,12 @@ export function ExerciseDetailClient({
   initialExercise,
   progress = [],
   userId = '',
+  weightUnit,
 }: {
   initialExercise: ExerciseDetailType;
   progress?: ProgressPoint[];
   userId?: string;
+  weightUnit?: string;
 }) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -55,7 +58,7 @@ export function ExerciseDetailClient({
       <div className="flex items-center justify-between">
         <Link
           href="/latihan"
-          className="inline-flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-100"
+          className="inline-flex items-center gap-2 text-sm text-[var(--muted)] hover:text-[var(--fg-strong)]"
         >
           <ArrowLeft className="w-4 h-4" />
           Kembali ke Pustaka
@@ -65,7 +68,7 @@ export function ExerciseDetailClient({
           <button
             type="button"
             onClick={() => setIsEditOpen(true)}
-            className="px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-xs font-semibold text-zinc-200 flex items-center gap-1.5"
+            className="px-3 py-2 rounded-xl bg-[var(--surface)] border border-[var(--border)] text-xs font-semibold text-[var(--fg-strong)] flex items-center gap-1.5"
           >
             <Edit3 className="w-3.5 h-3.5" />
             Edit
@@ -78,7 +81,7 @@ export function ExerciseDetailClient({
                   deleteMutation.mutate();
                 }
               }}
-              className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-red-400"
+              className="p-2 rounded-xl bg-[var(--surface)] border border-[var(--border)] text-red-400"
             >
               <Trash2 className="w-4 h-4" />
             </button>
@@ -86,7 +89,7 @@ export function ExerciseDetailClient({
         </div>
       </div>
 
-      <ExerciseProgressChart data={progress} />
+      <ExerciseProgressChart data={progress} weightUnit={weightUnit} />
 
       {exercise.imageUrl && (
         <div className="grid grid-cols-2 gap-2">
@@ -96,30 +99,30 @@ export function ExerciseDetailClient({
               src={exercise.imageUrl!.replace(/0\.jpg$/, `${i}.jpg`)}
               alt={`${exercise.name} — posisi ${i === 0 ? 'awal' : 'akhir'}`}
               loading="lazy"
-              className="w-full aspect-[3/4] object-contain rounded-2xl bg-zinc-900 border border-zinc-800"
+              className="w-full aspect-[3/4] object-contain rounded-2xl bg-[var(--surface)] border border-[var(--border)]"
             />
           ))}
         </div>
       )}
 
-      <div className="p-5 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-3">
+      <div className="p-5 rounded-2xl bg-[var(--surface)] border border-[var(--border)] space-y-3">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-400">
             {MUSCLE_LABELS[exercise.primaryMuscle]}
           </span>
-          <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-zinc-800 text-zinc-300">
+          <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-[var(--surface-2)] text-[var(--fg-soft)]">
             {EQUIPMENT_LABELS[exercise.equipment]}
           </span>
-          <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-zinc-800 text-amber-300">
-            Increment +{exercise.weightIncrement} kg
+          <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-[var(--surface-2)] text-amber-300">
+            Increment +{roundWeight(exercise.weightIncrement, weightUnit)} {weightUnitLabel(weightUnit)}
           </span>
         </div>
 
-        <h1 className="text-xl font-bold text-zinc-100">{exercise.name}</h1>
+        <h1 className="text-xl font-bold text-[var(--fg-strong)]">{exercise.name}</h1>
 
         {exercise.secondaryMuscles.length > 0 && (
-          <p className="text-xs text-zinc-400">
-            <span className="text-zinc-500">Otot Pendukung:</span>{' '}
+          <p className="text-xs text-[var(--muted)]">
+            <span className="text-[var(--muted-strong)]">Otot Pendukung:</span>{' '}
             {exercise.secondaryMuscles
               .map((m) => MUSCLE_LABELS[m])
               .join(', ')}
@@ -139,12 +142,12 @@ export function ExerciseDetailClient({
         )}
       </div>
 
-      <div className="p-5 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-3">
+      <div className="p-5 rounded-2xl bg-[var(--surface)] border border-[var(--border)] space-y-3">
         <h2 className="font-bold text-sm flex items-center gap-2 text-emerald-400">
           <CheckCircle2 className="w-4 h-4" />
           Langkah-langkah Eksekusi
         </h2>
-        <ol className="space-y-2.5 text-sm text-zinc-300">
+        <ol className="space-y-2.5 text-sm text-[var(--fg-soft)]">
           {exercise.steps.map((step, i) => (
             <li key={i} className="flex gap-3">
               <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
@@ -157,12 +160,12 @@ export function ExerciseDetailClient({
       </div>
 
       {exercise.tips.length > 0 && (
-        <div className="p-5 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-3">
+        <div className="p-5 rounded-2xl bg-[var(--surface)] border border-[var(--border)] space-y-3">
           <h2 className="font-bold text-sm flex items-center gap-2 text-amber-400">
             <Lightbulb className="w-4 h-4" />
             Tips Teknik & Kontraksi
           </h2>
-          <ul className="space-y-2 text-sm text-zinc-300 list-disc list-inside">
+          <ul className="space-y-2 text-sm text-[var(--fg-soft)] list-disc list-inside">
             {exercise.tips.map((tip, i) => (
               <li key={i} className="leading-relaxed">
                 {tip}
@@ -173,12 +176,12 @@ export function ExerciseDetailClient({
       )}
 
       {exercise.commonMistakes.length > 0 && (
-        <div className="p-5 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-3">
+        <div className="p-5 rounded-2xl bg-[var(--surface)] border border-[var(--border)] space-y-3">
           <h2 className="font-bold text-sm flex items-center gap-2 text-rose-400">
             <AlertTriangle className="w-4 h-4" />
             Kesalahan Umum yang Harus Dihindari
           </h2>
-          <ul className="space-y-2 text-sm text-zinc-300 list-disc list-inside">
+          <ul className="space-y-2 text-sm text-[var(--fg-soft)] list-disc list-inside">
             {exercise.commonMistakes.map((mistake, i) => (
               <li key={i} className="leading-relaxed">
                 {mistake}
@@ -189,7 +192,7 @@ export function ExerciseDetailClient({
       )}
 
       {exercise.alternatives.length > 0 && (
-        <div className="p-5 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-3">
+        <div className="p-5 rounded-2xl bg-[var(--surface)] border border-[var(--border)] space-y-3">
           <h2 className="font-bold text-sm flex items-center gap-2 text-cyan-400">
             <Repeat className="w-4 h-4" />
             Gerakan Alternatif (Saat Alat Dipakai)
@@ -198,7 +201,7 @@ export function ExerciseDetailClient({
             {exercise.alternatives.map((alt, i) => (
               <span
                 key={i}
-                className="px-3 py-1.5 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-zinc-200 flex items-center gap-1.5"
+                className="px-3 py-1.5 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-xs text-[var(--fg-strong)] flex items-center gap-1.5"
               >
                 <Dumbbell className="w-3.5 h-3.5 text-cyan-400" />
                 {alt}

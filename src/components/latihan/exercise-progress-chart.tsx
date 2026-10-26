@@ -10,25 +10,38 @@ import {
   YAxis,
 } from 'recharts';
 import type { ProgressPoint } from '@/app/actions/statistik-actions';
+import { toDisplayWeight, weightUnitLabel } from '@/lib/units';
 
-export function ExerciseProgressChart({ data }: { data: ProgressPoint[] }) {
+export function ExerciseProgressChart({
+  data,
+  weightUnit,
+}: {
+  data: ProgressPoint[];
+  weightUnit?: string;
+}) {
   if (data.length < 2) {
     return (
-      <p className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06] text-xs text-zinc-400 text-center">
+      <p className="p-4 rounded-2xl bg-[var(--card)] border border-[var(--border)] text-xs text-[var(--muted)] text-center">
         Latihan gerakan ini minimal 2 sesi untuk melihat grafik progres.
       </p>
     );
   }
 
+  const unitLabel = weightUnitLabel(weightUnit);
+  const chartData = data.map((p) => ({
+    ...p,
+    best1RM: toDisplayWeight(p.best1RM, weightUnit),
+  }));
+
   return (
-    <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08]">
-      <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-3">
+    <div className="p-4 rounded-2xl bg-[var(--card)] border border-[var(--border)]">
+      <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--muted)] mb-3">
         Progres 1RM Estimasi
       </h3>
       {/* Tinggi eksplisit wajib — ResponsiveContainer tidak render tanpa parent berukuran */}
       <div style={{ width: '100%', height: 180 }}>
         <ResponsiveContainer>
-          <LineChart data={data} margin={{ top: 5, right: 5, bottom: 0, left: -20 }}>
+          <LineChart data={chartData} margin={{ top: 5, right: 5, bottom: 0, left: -20 }}>
             <CartesianGrid stroke="rgba(255,255,255,0.06)" vertical={false} />
             <XAxis
               dataKey="date"
@@ -45,7 +58,7 @@ export function ExerciseProgressChart({ data }: { data: ProgressPoint[] }) {
                 fontSize: 12,
               }}
               labelStyle={{ color: '#a1a1aa' }}
-              formatter={(value) => [`${Number(value).toFixed(1)} kg`, '1RM Estimasi']}
+              formatter={(value) => [`${Number(value).toFixed(1)} ${unitLabel}`, '1RM Estimasi']}
             />
             <Line
               type="monotone"

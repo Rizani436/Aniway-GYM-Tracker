@@ -15,15 +15,24 @@ import {
 import { format } from 'date-fns';
 import type { BodyWeightData } from '@/app/actions/statistik-actions';
 import { logBodyWeightAction } from '@/app/actions/statistik-actions';
+import { toKg, toDisplayWeight, roundWeight, weightUnitLabel } from '@/lib/units';
 
-export function BodyWeightCard({ data }: { data: BodyWeightData }) {
+export function BodyWeightCard({
+  data,
+  weightUnit,
+}: {
+  data: BodyWeightData;
+  weightUnit?: string;
+}) {
   const router = useRouter();
+  const unitLabel = weightUnitLabel(weightUnit);
   const [weight, setWeight] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const chartData = data.logs.map((l) => ({
     ...l,
+    weight: toDisplayWeight(l.weight, weightUnit),
     label: format(new Date(l.recordedAt), 'd/M'),
   }));
 
@@ -32,7 +41,7 @@ export function BodyWeightCard({ data }: { data: BodyWeightData }) {
     setSaving(true);
     setError(null);
     try {
-      await logBodyWeightAction(Number(weight));
+      await logBodyWeightAction(toKg(Number(weight), weightUnit));
       setWeight('');
       router.refresh();
     } catch (e) {
@@ -43,29 +52,29 @@ export function BodyWeightCard({ data }: { data: BodyWeightData }) {
   }
 
   return (
-    <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08]">
-      <div className="flex items-center gap-2 text-xs font-bold text-zinc-300 mb-2">
+    <div className="p-4 rounded-2xl bg-[var(--card)] border border-[var(--border)]">
+      <div className="flex items-center gap-2 text-xs font-bold text-[var(--fg-soft)] mb-2">
         <Scale className="w-4 h-4 text-emerald-400" />
         <span>Berat Badan</span>
       </div>
 
       {data.latest != null && (
         <div className="flex items-baseline gap-2 mb-1">
-          <span className="text-2xl font-bold tabular-nums text-white">
-            {data.latest}
+          <span className="text-2xl font-bold tabular-nums text-[var(--fg)]">
+            {roundWeight(data.latest, weightUnit)}
           </span>
-          <span className="text-xs text-zinc-400">kg</span>
+          <span className="text-xs text-[var(--muted)]">{unitLabel}</span>
           {data.trend7d != null && (
-            <span className="ml-auto flex items-center gap-1 text-[11px] font-semibold tabular-nums text-zinc-400">
+            <span className="ml-auto flex items-center gap-1 text-[11px] font-semibold tabular-nums text-[var(--muted)]">
               <TrendingUp className="w-3 h-3" />
-              {(data.trend7d >= 0 ? '+' : '') + data.trend7d.toFixed(1) + ' kg / 7hr'}
+              {(data.trend7d >= 0 ? '+' : '') + toDisplayWeight(data.trend7d, weightUnit).toFixed(1) + ' ' + unitLabel + ' / 7hr'}
             </span>
           )}
         </div>
       )}
 
       {chartData.length < 2 ? (
-        <p className="text-xs text-zinc-400 text-center py-6">
+        <p className="text-xs text-[var(--muted)] text-center py-6">
           Catat berat badan minimal 2x untuk melihat grafik.
         </p>
       ) : (
@@ -83,7 +92,7 @@ export function BodyWeightCard({ data }: { data: BodyWeightData }) {
                   fontSize: 12,
                 }}
                 labelStyle={{ color: '#a1a1aa' }}
-                formatter={(value: number) => [`${value.toFixed(1)} kg`, 'Berat']}
+                formatter={(value: number) => [`${value.toFixed(1)} ${unitLabel}`, 'Berat']}
               />
               <Line
                 type="monotone"
@@ -105,7 +114,7 @@ export function BodyWeightCard({ data }: { data: BodyWeightData }) {
           placeholder="Berat hari ini"
           value={weight}
           onChange={(e) => setWeight(e.target.value)}
-          className="flex-1 min-w-0 px-3 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm tabular-nums text-white placeholder:text-zinc-500 focus:outline-none focus:border-emerald-500/50"
+          className="flex-1 min-w-0 px-3 py-3 rounded-xl bg-[var(--card)] border border-[var(--border)] text-sm tabular-nums text-[var(--fg)] placeholder:text-[var(--muted-strong)] focus:outline-none focus:border-emerald-500/50"
         />
         <button
           type="button"

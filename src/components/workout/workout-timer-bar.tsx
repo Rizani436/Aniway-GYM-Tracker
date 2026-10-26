@@ -65,10 +65,10 @@ export function WorkoutTimerBar({ initialSeconds, onFinish, onClose }: WorkoutTi
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 max-w-lg mx-auto px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pointer-events-none">
       <div
-        className={`pointer-events-auto rounded-2xl p-3 space-y-2.5 text-zinc-100 border shadow-[0_12px_40px_rgba(0,0,0,0.85)] backdrop-blur-xl transition-colors duration-300 ${
+        className={`pointer-events-auto rounded-2xl p-3 space-y-2.5 text-[var(--fg-strong)] border shadow-[0_12px_40px_rgba(0,0,0,0.85)] backdrop-blur-xl transition-colors duration-300 ${
           isUrgent
             ? 'bg-rose-950/90 border-rose-500/50'
-            : 'bg-[#0f1011]/95 border-emerald-500/35'
+            : 'bg-[var(--bg-soft)] border-emerald-500/35'
         }`}
       >
         <div className="flex items-center justify-between gap-2">
@@ -86,7 +86,7 @@ export function WorkoutTimerBar({ initialSeconds, onFinish, onClose }: WorkoutTi
               <div className="flex items-baseline gap-1.5">
                 <span
                   className={`text-2xl font-black font-mono tracking-tight leading-none tabular-nums ${
-                    isUrgent ? 'text-rose-200' : 'text-white'
+                    isUrgent ? 'text-rose-200' : 'text-[var(--fg)]'
                   }`}
                 >
                   {formattedTime}
@@ -99,7 +99,7 @@ export function WorkoutTimerBar({ initialSeconds, onFinish, onClose }: WorkoutTi
                   Istirahat
                 </span>
               </div>
-              <p className="text-[10px] text-zinc-400 mt-0.5 truncate">
+              <p className="text-[10px] text-[var(--muted)] mt-0.5 truncate">
                 {isUrgent ? 'Siap-siap set berikutnya!' : 'Napas & siapkan set berikutnya'}
               </p>
             </div>
@@ -109,7 +109,7 @@ export function WorkoutTimerBar({ initialSeconds, onFinish, onClose }: WorkoutTi
             <button
               type="button"
               onClick={() => addTime(-15)}
-              className="w-9 h-9 rounded-lg bg-white/[0.05] border border-white/[0.08] text-zinc-300 text-[11px] font-bold flex items-center justify-center active:scale-90 transition-transform touch-manipulation"
+              className="w-9 h-9 rounded-lg bg-[var(--card-hover)] border border-[var(--border)] text-[var(--fg-soft)] text-[11px] font-bold flex items-center justify-center active:scale-90 transition-transform touch-manipulation"
               title="-15 detik"
               aria-label="Kurangi 15 detik"
             >
@@ -118,7 +118,7 @@ export function WorkoutTimerBar({ initialSeconds, onFinish, onClose }: WorkoutTi
             <button
               type="button"
               onClick={() => addTime(15)}
-              className="w-9 h-9 rounded-lg bg-white/[0.05] border border-white/[0.08] text-zinc-300 text-[11px] font-bold flex items-center justify-center active:scale-90 transition-transform touch-manipulation"
+              className="w-9 h-9 rounded-lg bg-[var(--card-hover)] border border-[var(--border)] text-[var(--fg-soft)] text-[11px] font-bold flex items-center justify-center active:scale-90 transition-transform touch-manipulation"
               title="+15 detik"
               aria-label="Tambah 15 detik"
             >
@@ -127,20 +127,20 @@ export function WorkoutTimerBar({ initialSeconds, onFinish, onClose }: WorkoutTi
             <button
               type="button"
               onClick={() => setIsSoundEnabled(!isSoundEnabled)}
-              className="w-9 h-9 rounded-lg bg-white/[0.05] border border-white/[0.08] text-zinc-300 flex items-center justify-center active:scale-90 transition-transform touch-manipulation"
+              className="w-9 h-9 rounded-lg bg-[var(--card-hover)] border border-[var(--border)] text-[var(--fg-soft)] flex items-center justify-center active:scale-90 transition-transform touch-manipulation"
               title={isSoundEnabled ? 'Suara aktif' : 'Suara bisu'}
               aria-label={isSoundEnabled ? 'Matikan suara' : 'Aktifkan suara'}
             >
               {isSoundEnabled ? (
                 <Volume2 className="w-4 h-4 text-emerald-400" />
               ) : (
-                <VolumeX className="w-4 h-4 text-zinc-500" />
+                <VolumeX className="w-4 h-4 text-[var(--muted-strong)]" />
               )}
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="w-9 h-9 rounded-lg bg-white/[0.05] border border-white/[0.08] text-zinc-300 flex items-center justify-center active:scale-90 transition-transform touch-manipulation"
+              className="w-9 h-9 rounded-lg bg-[var(--card-hover)] border border-[var(--border)] text-[var(--fg-soft)] flex items-center justify-center active:scale-90 transition-transform touch-manipulation"
               title="Tutup timer"
               aria-label="Tutup timer"
             >
@@ -150,7 +150,7 @@ export function WorkoutTimerBar({ initialSeconds, onFinish, onClose }: WorkoutTi
         </div>
 
         {/* Progress Bar */}
-        <div className="w-full bg-white/[0.08] h-1.5 rounded-full overflow-hidden">
+        <div className="w-full bg-[var(--card-hover)] h-1.5 rounded-full overflow-hidden">
           <div
             className={`h-full transition-all duration-250 ease-linear rounded-full ${
               isUrgent
