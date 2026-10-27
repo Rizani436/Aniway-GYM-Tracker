@@ -13,6 +13,7 @@
     "db:studio": "prisma studio",
     "check:updaters": "node scripts/check-pure-updaters.cjs",
     "test:workout": "node scripts/check-pure-updaters.cjs && node scripts/test-pure-updater-behavior.cjs && node scripts/test-rest-timer-add.cjs && node scripts/test-workout-accordion.cjs && node scripts/test-warmup-volume.cjs",
+    "test:unit": "vitest run",
     "test:db": "tsx scripts/test-db-retry.ts",
     "test:plate": "tsx scripts/test-plate-calculator.ts",
     "test:contrast": "node scripts/test-light-theme-contrast.cjs"
@@ -48,7 +49,8 @@
     "prisma": "^6.3.0",
     "tailwindcss": "^3.4.17",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "vitest": "^5.0.5"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
