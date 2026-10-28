@@ -1,17 +1,42 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { signOutAction } from '@/app/login/actions';
 import { Dumbbell, Layers, Play, Plus, LogOut, ChevronRight, Zap, Repeat, TrendingUp, Trophy } from 'lucide-react';
 import { useHomeData, type HomeData } from '@/hooks/use-home-data';
 import { toDisplayWeight, weightUnitLabel } from '@/lib/units';
+import { parseWorkoutDraft, draftAgeMs, DRAFT_MAX_AGE_MS } from '@/lib/workout-draft';
 
-type HomeUser = { name?: string | null; weightUnit?: string | null } | null;
+type HomeUser = { id?: string | null; name?: string | null; weightUnit?: string | null } | null;
+
+/** Sesi latihan yang belum selesai (draft di perangkat), untuk pintasan lanjut. */
+type ActiveSession = { name: string; since: string; elapsedMin: number };
 
 export function HomeClient({ data, user }: { data: HomeData; user: HomeUser }) {
   // initialData dari server → first paint identik; revisit hit cache lokal.
   const { data: home } = useHomeData(data);
   const { programs, exerciseCount, lastSession, weekRecap, prCount } = home;
+
+  // Sesi berjalan dibaca dari perangkat (localStorage) — tidak ada query DB.
+  // Server tak bisa tahu ini, jadi dibaca setelah mount (null saat SSR).
+  const [activeSession, setActiveSession] = useState<ActiveSession | null>(null);
+  useEffect(() => {
+    const key = `besilog_workout_draft_${user?.id ?? 'offline'}`;
+    const draft = parseWorkoutDraft(localStorage.getItem(key));
+    if (!draft) return;
+    const age = draftAgeMs(draft);
+    // Draft kedaluwarsa bukan "sesi berjalan".
+    if (age >= DRAFT_MAX_AGE_MS) return;
+    setActiveSession({
+      name: draft.sessionName || 'Latihan',
+      since: new Date(draft.startedAt).toLocaleTimeString('id-ID', {
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+      elapsedMin: Math.floor(age / 60000),
+    });
+  }, [user?.id]);
 
   const { thisWeek, lastWeek } = weekRecap;
   const volumeDelta =
@@ -129,6 +154,34 @@ export function HomeClient({ data, user }: { data: HomeData; user: HomeUser }) {
             </span>
           )}
         </div>
+      )}
+
+      {/* Sesi Sedang Berjalan — dibaca dari perangkat, jadi muncul juga saat
+          aplikasi baru dibuka dari ikon PWA. Satu tap langsung lanjut. */}
+      {activeSession && (
+        <Link
+          href="/workout"
+          className="block p-3.5 rounded-2xl bg-emerald-500/12 border border-emerald-500/35 active:scale-[0.98] transition-transform touch-manipulation"
+        >
+          <div className="flex items-center gap-3">
+            <span className="relative flex w-2.5 h-2.5 shrink-0">
+              <span className="absolute inline-flex w-full h-full rounded-full bg-emerald-400 opacity-70 animate-ping" />
+              <span className="relative inline-flex w-2.5 h-2.5 rounded-full bg-emerald-400" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-bold text-emerald-300">
+                Lanjutkan Sesi: <span className="truncate">{activeSession.name}</span>
+              </p>
+              <p className="text-[11px] text-[var(--muted)] mt-0.5 tabular-nums">
+                Dimulai {activeSession.since} · {activeSession.elapsedMin} menit berjalan
+              </p>
+            </div>
+            <span className="px-3 h-8 rounded-xl bg-emerald-500 text-zinc-950 font-bold text-xs flex items-center gap-1 shrink-0">
+              <Play className="w-3.5 h-3.5 fill-current" />
+              Lanjut
+            </span>
+          </div>
+        </Link>
       )}
 
       {/* Mulai Sesi Cepat Hero Card */}

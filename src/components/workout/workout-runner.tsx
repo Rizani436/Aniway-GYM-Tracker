@@ -45,6 +45,11 @@ import { MUSCLE_TRANSLATIONS, EQUIPMENT_TRANSLATIONS } from '@/lib/constants';
 import { saveWorkoutSnapshot, loadWorkoutSnapshot, findSnapshotUserId, type WorkoutSnapshot } from '@/lib/workout-cache';
 import { enqueueSession, pendingCount, flushQueue } from '@/lib/offline-queue';
 import { newClientSessionId } from '@/lib/client-id';
+import {
+  planDraftLoad,
+  parseWorkoutDraft,
+  type WorkoutDraftShape,
+} from '@/lib/workout-draft';
 
 interface WorkoutExerciseState {
   exerciseId: string;
@@ -199,9 +204,21 @@ export function WorkoutRunner({
   const [expandedImageIdx, setExpandedImageIdx] = useState<number | null>(null);
   // Indeks gerakan yang panel catatannya sedang dibuka
   const [openNoteIdx, setOpenNoteIdx] = useState<number | null>(null);
-  const [draftBanner, setDraftBanner] = useState<{ exists: boolean; date?: string }>({
+  const [draftBanner, setDraftBanner] = useState<{
+    exists: boolean;
+    /** 'stale' = sesi terlalu lama; 'other-program' = URL minta program lain */
+    reason?: 'stale' | 'other-program';
+    sessionName?: string;
+    programId?: string | null;
+    date?: string;
+  }>({
     exists: false,
   });
+  // 'pending' = ada draft yang belum diputuskan (beda program / kedaluwarsa).
+  // Selama pending, auto-save DITAHAN supaya draft lama tidak tertimpa state kosong.
+  const [draftDecision, setDraftDecision] = useState<'pending' | 'resolved'>('resolved');
+  // Pastikan keputusan awal dijalankan sekali per user (storageKey), bukan tiap render.
+  const initDoneRef = useRef<string | null>(null);
 
   // Mode offline: server tidak terjangkau -> pakai snapshot perangkat.
   const offlineUserId = user?.id ?? findSnapshotUserId();
@@ -269,9 +286,68 @@ export function WorkoutRunner({
     });
   }, [initialHistoryMap, restDefault]);
 
+  /** Isi state sesi dari draft tersimpan. Nilai balik: latihan yang dipulihkan. */
+  const applyDraft = useCallback((draft: WorkoutDraftShape) => {
+    setSessionName(draft.sessionName || 'Latihan');
+    setProgramId(draft.programId ?? null);
+    setStartedAt(draft.startedAt);
+    setSessionNotes(draft.sessionNotes || '');
+    setExercises((draft.exercises as WorkoutExerciseState[]) || []);
+    setOpenCardIdx(null); // kembali ke mode otomatis: ikuti gerakan aktif
+    // Timer lanjut dari waktu mulai sesi, bukan dari nol.
+    const diff = Math.floor((Date.now() - new Date(draft.startedAt).getTime()) / 1000);
+    setElapsedSeconds(Number.isFinite(diff) ? Math.max(0, diff) : 0);
+  }, []);
+
   // Check LocalStorage Draft on Mount
   useEffect(() => {
-    // Server tak terjangkau ATAU gagal memuat -> coba pulihkan dari snapshot perangkat.
+    // Jalankan keputusan awal SEKALI per user. Tanpa penjaga ini, effect ikut
+    // jalan tiap kali initialProgram/identitas fungsi berubah dan bisa menimpa
+    // state sesi yang sedang berjalan.
+    if (initDoneRef.current === storageKey) return;
+    initDoneRef.current = storageKey;
+
+    // Draft DIPUTUSKAN LEBIH DULU, baik online maupun offline: kalau tidak,
+    // jalur offline akan mengisi latihan dari snapshot dan auto-save menimpa
+    // sesi yang sedang berjalan (bug yang sama, versi offline).
+    const draft = parseWorkoutDraft(localStorage.getItem(storageKey));
+    const plan = planDraftLoad({ draft, requestedProgramId });
+
+    // Sesi berjalan: lanjut SENYAP (tanpa banner, tanpa tanya) — kasus
+    // "keluar lama lalu balik lagi, isinya jangan diulang dari awal".
+    if (plan.kind === 'resume') {
+      applyDraft(plan.draft);
+      setDraftDecision('resolved');
+      setDraftBanner({ exists: false });
+      return;
+    }
+
+    // Draft ada tapi tak bisa dievaluasi sendiri dengan aman: TANYA dulu.
+    // PENTING: draft TIDAK dihapus di sini — dulu dihapus diam-diam dan itu
+    // penyebab isi sesi hilang.
+    if (plan.kind === 'ask') {
+      setDraftDecision('pending');
+      setDraftBanner({
+        exists: true,
+        reason: plan.reason,
+        sessionName: plan.draft.sessionName || 'Latihan',
+        programId: plan.draft.programId ?? null,
+        date: new Date(plan.draft.startedAt).toLocaleTimeString('id-ID', {
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+      });
+      // Tampilkan sesi berjalan di belakang banner supaya tombol "Lanjut"
+      // benar-benar melanjutkan (bukan mengisi dari nol setelah state kosong).
+      applyDraft(plan.draft);
+      return;
+    }
+
+    // Tidak ada draft -> mulai baru.
+    setDraftDecision('resolved');
+    setDraftBanner({ exists: false });
+
+    // Server tak terjangkau: pakai snapshot perangkat sebagai sumber program.
     if (isOffline) {
       const snapProg = (snapshot?.selectedProgram as { id?: string | null; name?: string } | null) ?? null;
       // Penjaga penting: kalau user MEMINTA program tertentu (programId di URL) tapi
@@ -286,87 +362,49 @@ export function WorkoutRunner({
       return;
     }
 
-    // Jika user membuka /workout dengan programId eksplisit di URL, program
-    // MENANG atas draft: maksudnya jelas "mulai sesi dari program ini",
-    // bukan melanjutkan draft lama (yang mungkin kosong/salah isi).
     if (initialProgram?.id) {
-      try {
-        const stale = localStorage.getItem(storageKey);
-        if (stale) {
-          const p = JSON.parse(stale);
-          if (p?.programId !== initialProgram.id) localStorage.removeItem(storageKey);
-        }
-      } catch {
-        // ignore
-      }
-      setDraftBanner({ exists: false });
       setSessionName(initialProgram.name);
       setExercises(createExercisesFromProgram(initialProgram));
-      return;
     }
+  }, [initialProgram, createExercisesFromProgram, storageKey, isOffline, snapshot, requestedProgramId, applyDraft]);
 
-    try {
-      const savedDraft = localStorage.getItem(storageKey);
-      if (savedDraft) {
-        const parsed = JSON.parse(savedDraft);
-        if (parsed && parsed.exercises && parsed.exercises.length > 0) {
-          setDraftBanner({
-            exists: true,
-            date: new Date(parsed.startedAt).toLocaleTimeString('id-ID', {
-              hour: '2-digit',
-              minute: '2-digit',
-            }),
-          });
-          return;
-        }
-      }
-    } catch {
-      // ignore
-    }
-
-    // Jika tidak ada draft, inisialisasi dari initialProgram jika ada
-    if (initialProgram) {
-      setExercises(createExercisesFromProgram(initialProgram));
-    }
-  }, [initialProgram, createExercisesFromProgram, storageKey, isOffline, snapshot]);
-
-  // Load draft function
+  // Lanjutkan sesi yang tertunda (dari banner)
   const handleLoadDraft = () => {
-    try {
-      const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        setSessionName(parsed.sessionName || 'Latihan');
-        setProgramId(parsed.programId || null);
-        setStartedAt(parsed.startedAt || new Date().toISOString());
-        setSessionNotes(parsed.sessionNotes || '');
-        setExercises(parsed.exercises || []);
-        setOpenCardIdx(null); // kembali ke mode otomatis: ikuti gerakan aktif
-
-        // Recalculate elapsed seconds
-        const diff = Math.floor((Date.now() - new Date(parsed.startedAt).getTime()) / 1000);
-        setElapsedSeconds(Math.max(0, diff));
-      }
-    } catch {
-      // ignore
-    } finally {
-      setDraftBanner({ exists: false });
-    }
+    const parsed = parseWorkoutDraft(localStorage.getItem(storageKey));
+    if (parsed) applyDraft(parsed);
+    setDraftDecision('resolved');
+    setDraftBanner({ exists: false });
   };
 
-  const handleDiscardDraft = () => {
+  /**
+   * Buang draft (tombol "Hapus" pada banner, atau "Sesi Baru" di header).
+   * `keepProgram` = tetap pakai program di URL (dipakai saat menolak draft lama
+   * demi memulai sesi program yang diminta).
+   */
+  const handleDiscardDraft = (keepProgram: boolean = true) => {
     localStorage.removeItem(storageKey);
+    setDraftDecision('resolved');
     setDraftBanner({ exists: false });
-    if (initialProgram) {
-      setExercises(createExercisesFromProgram(initialProgram));
+    const prog = keepProgram ? initialProgram : null;
+    if (prog?.id) {
+      setSessionName(prog.name);
+      setProgramId(prog.id);
+      setExercises(createExercisesFromProgram(prog));
     } else {
+      setSessionName('Latihan Bebas (Freestyle)');
+      setProgramId(null);
       setExercises([]);
     }
     setStartedAt(new Date().toISOString());
     setElapsedSeconds(0);
+    setSessionNotes('');
+    setOpenCardIdx(null);
   };
 
-  // Auto-save draft ke localStorage setiap kali ada perubahan data sesi
+  // Auto-save draft ke localStorage setiap kali ada perubahan data sesi.
+  // DITAHAN selama keputusan draft belum diambil (`draftDecision === 'pending'`):
+  // kalau tidak, state sesi yang belum siap akan menimpa draft lama, dan itulah
+  // yang dulu membuat isi sesi hilang setelah keluar aplikasi.
   useEffect(() => {
     // Simpan snapshot agar /workout bisa dibuka offline lain kali
     if (user) {
@@ -385,6 +423,7 @@ export function WorkoutRunner({
       });
     }
 
+    if (draftDecision === 'pending') return;
     if (exercises.length === 0) return;
     try {
       const draftPayload = {
@@ -399,7 +438,7 @@ export function WorkoutRunner({
     } catch {
       // ignore
     }
-  }, [sessionName, programId, startedAt, sessionNotes, exercises, storageKey, user, initialProgram, userPrograms, availableExercises, initialHistoryMap]);
+  }, [sessionName, programId, startedAt, sessionNotes, exercises, storageKey, user, initialProgram, userPrograms, availableExercises, initialHistoryMap, draftDecision]);
 
   // Live Workout Timer & Screen Wake Lock
   useEffect(() => {
@@ -800,15 +839,22 @@ export function WorkoutRunner({
         </div>
       )}
 
-      {/* Draft Recovery Banner */}
+      {/* Draft Recovery Banner — hanya muncul kalau tak bisa diputuskan sendiri:
+          draft kedaluwarsa atau program di URL berbeda dari sesi berjalan. */}
       {draftBanner.exists && (
         <div className="bg-amber-500/15 border border-amber-500/30 rounded-2xl p-3.5 mb-4 flex items-center justify-between gap-3 animate-in fade-in">
           <div className="flex items-center gap-2.5">
             <AlertCircle className="w-5 h-5 text-amber-400 shrink-0" />
             <div>
-              <p className="text-xs font-bold text-amber-300">Draft Sesi Ditemukan</p>
+              <p className="text-xs font-bold text-amber-300">
+                {draftBanner.reason === 'other-program'
+                  ? `Sesi "${draftBanner.sessionName}" masih berjalan`
+                  : 'Draft Sesi Ditemukan'}
+              </p>
               <p className="text-[11px] text-[var(--muted)]">
-                Dimulai pukul {draftBanner.date}. Lanjutkan latihan?
+                {draftBanner.reason === 'other-program'
+                  ? `Dimulai pukul ${draftBanner.date}. Lanjutkan sesi itu, atau ganti ke program ini?`
+                  : `Dimulai pukul ${draftBanner.date}. Lanjutkan latihan?`}
               </p>
             </div>
           </div>
@@ -822,10 +868,10 @@ export function WorkoutRunner({
             </button>
             <button
               type="button"
-              onClick={handleDiscardDraft}
+              onClick={() => handleDiscardDraft(true)}
               className="px-2 py-1 bg-[var(--surface-2)] text-[var(--muted)] hover:text-[var(--fg)] rounded-lg text-xs"
             >
-              Hapus
+              {draftBanner.reason === 'other-program' ? 'Ganti' : 'Hapus'}
             </button>
           </div>
         </div>
@@ -875,6 +921,17 @@ export function WorkoutRunner({
             {Math.round(toDisplayWeight(liveVolume, unit)).toLocaleString('id-ID')} {unitLabel}
           </span>
           <PlateCalculatorSheet unit={unit} className="ml-auto w-9 h-9 rounded-lg bg-transparent border-transparent text-[var(--muted)]" />
+          {/* Mulai sesi baru: buang draft sesi berjalan. Satu tap, tanpa dialog
+              (resume sudah otomatis, jadi ini pintu keluar yang dibutuhkan). */}
+          <button
+            type="button"
+            onClick={() => handleDiscardDraft(false)}
+            className="w-9 h-9 rounded-lg bg-transparent border border-[var(--border)] text-[var(--fg-soft)] flex items-center justify-center active:scale-90 transition-transform hover:text-amber-400"
+            aria-label="Mulai sesi baru"
+            title="Mulai sesi baru"
+          >
+            <RotateCcw className="w-4 h-4" />
+          </button>
           <button
             type="button"
             onClick={() => setIsProgramPickerOpen(true)}
