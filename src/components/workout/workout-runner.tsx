@@ -921,11 +921,26 @@ export function WorkoutRunner({
             {Math.round(toDisplayWeight(liveVolume, unit)).toLocaleString('id-ID')} {unitLabel}
           </span>
           <PlateCalculatorSheet unit={unit} className="ml-auto w-9 h-9 rounded-lg bg-transparent border-transparent text-[var(--muted)]" />
-          {/* Mulai sesi baru: buang draft sesi berjalan. Satu tap, tanpa dialog
-              (resume sudah otomatis, jadi ini pintu keluar yang dibutuhkan). */}
+          {/* Mulai sesi baru: buang draft sesi berjalan. Satu tap, tapi tetap
+              minta konfirmasi bila sudah ada set yang dicentang — supaya sesi
+              tidak hilang karena salah tap (pola sama dengan alert() lain di
+              komponen ini). */}
           <button
             type="button"
-            onClick={() => handleDiscardDraft(false)}
+            onClick={() => {
+              const adaProgres = exercisesRef.current.some((ex) =>
+                ex.sets.some((s) => s.isCompleted)
+              );
+              if (
+                adaProgres &&
+                !window.confirm(
+                  'Buang sesi yang sedang berjalan? Set yang sudah dicatat akan hilang.'
+                )
+              ) {
+                return;
+              }
+              handleDiscardDraft(false);
+            }}
             className="w-9 h-9 rounded-lg bg-transparent border border-[var(--border)] text-[var(--fg-soft)] flex items-center justify-center active:scale-90 transition-transform hover:text-amber-400"
             aria-label="Mulai sesi baru"
             title="Mulai sesi baru"
